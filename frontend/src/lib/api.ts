@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { Product, User } from '../types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const api = axios.create({
   baseURL: API_BASE,
-  timeout: 4000,
+  timeout: 8000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -328,33 +328,28 @@ export function saveLocalProducts(products: Product[]): void {
 
 // ── GET PRODUCTS ─────────────────────────────────────────────────────────────
 export async function getProducts(category?: string): Promise<Product[]> {
-  // If in browser and admin has saved products locally, always use them as source of truth
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('kounoz_products');
-    if (saved) {
-      const local = getLocalProducts();
-      if (local && local.length > 0) {
-        return filterByCategory(local, category);
-      }
-    }
-  }
-
   try {
-    const url = category && category !== 'جميع القطع' 
+    const url = category && category !== 'جميع القطع'
       ? `/api/products?category=${encodeURIComponent(category)}`
       : '/api/products';
-    const res = await api.get(url);
-    if (res.data && res.data.success && res.data.data.length > 0) {
-      // Sync to local products if not present
-      if (typeof window !== 'undefined' && !localStorage.getItem('kounoz_products')) {
-        saveLocalProducts(res.data.data);
+    
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
+        if (typeof window !== 'undefined') {
+          saveLocalProducts(data.data);
+        }
+        return filterByCategory(data.data, category);
       }
-      return filterByCategory(getLocalProducts(), category);
     }
-    return filterByCategory(getLocalProducts(), category);
-  } catch {
-    return filterByCategory(getLocalProducts(), category);
+  } catch (err) {
+    console.warn('API getProducts fallback to local storage', err);
   }
+
+  // Fallback to local products
+  const local = getLocalProducts();
+  return filterByCategory(local, category);
 }
 
 function filterByCategory(items: Product[], category?: string): Product[] {
@@ -366,18 +361,20 @@ function filterByCategory(items: Product[], category?: string): Product[] {
 
 // ── GET PRODUCT BY ID ────────────────────────────────────────────────────────
 export async function getProductById(id: number | string): Promise<Product | null> {
+  try {
+    const res = await fetch(`/api/products/${id}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && data.data) {
+        return data.data;
+      }
+    }
+  } catch {}
+
   const localList = getLocalProducts();
   const found = localList.find((p) => String(p.id) === String(id));
   if (found) return found;
 
-  try {
-    const res = await api.get(`/api/products/${id}`);
-    if (res.data && res.data.success) {
-      return res.data.data;
-    }
-  } catch {
-    // ignore
-  }
   return FALLBACK_PRODUCTS.find((p) => String(p.id) === String(id)) || null;
 }
 
@@ -417,14 +414,21 @@ export async function createProduct(productData: Partial<Product>): Promise<Prod
     ],
   };
 
-  // Try API first
+  // Try Next.js Server API first
   try {
-    const res = await api.post('/api/products', newProduct);
-    if (res.data && res.data.success && res.data.data) {
-      newProduct.id = res.data.data.id;
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newProduct),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.data && data.data.id) {
+        newProduct.id = data.data.id;
+      }
     }
   } catch (err) {
-    console.warn('API create product fallback to local storage');
+    console.warn('API create product fallback to local storage', err);
   }
 
   // Save to Local Storage
@@ -446,7 +450,11 @@ export async function updateProduct(id: number, productData: Partial<Product>): 
   saveLocalProducts(current);
 
   try {
-    await api.put(`/api/products/${id}`, productData);
+    await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedProduct),
+    });
   } catch (err) {
     console.warn('API update product fallback');
   }
@@ -460,11 +468,6 @@ export async function deleteProduct(id: number): Promise<boolean> {
   const filtered = current.filter((p) => p.id !== id);
   saveLocalProducts(filtered);
 
-  try {
-    await api.delete(`/api/products/${id}`);
-  } catch (err) {
-    console.warn('API delete product fallback');
-  }
   return true;
 }
 
@@ -686,30 +689,50 @@ export function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// ── UPLOAD SINGLE IMAGE (From local device) ──────────────────────────────────
+// ── UPLOAD SINGLE IMAGE (Cloudinary via Next.js API Route) ────────────────────
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('image', file);
 
   try {
-    const res = await api.post('/api/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
     });
 
-    if (res.data && res.data.success && res.data.url) {
-      return res.data.url;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && data.url) {
+        return data.url;
+      }
     }
   } catch (err) {
-    console.warn('Backend upload failed, converting image to local base64 data URL fallback', err);
+    console.warn('Cloudinary upload route error, trying direct Cloudinary fallback', err);
   }
+
+  // Direct unsigned Cloudinary fallback
+  try {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'dcifssy9u';
+    const cFormData = new FormData();
+    cFormData.append('file', file);
+    cFormData.append('upload_preset', 'ml_default');
+    const cRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: cFormData,
+    });
+    if (cRes.ok) {
+      const cData = await cRes.json();
+      if (cData && cData.secure_url) {
+        return cData.secure_url;
+      }
+    }
+  } catch {}
 
   // Fallback to Base64 data URL
   return await fileToBase64(file);
 }
 
-// ── UPLOAD MULTIPLE IMAGES (From local device) ────────────────────────────────
+// ── UPLOAD MULTIPLE IMAGES (Cloudinary via Next.js API Route) ─────────────────
 export async function uploadMultipleImages(files: File[]): Promise<string[]> {
   const formData = new FormData();
   files.forEach((file) => {
@@ -717,21 +740,23 @@ export async function uploadMultipleImages(files: File[]): Promise<string[]> {
   });
 
   try {
-    const res = await api.post('/api/upload/multiple', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
     });
 
-    if (res.data && res.data.success && Array.isArray(res.data.urls) && res.data.urls.length > 0) {
-      return res.data.urls;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.urls) && data.urls.length > 0) {
+        return data.urls;
+      }
     }
   } catch (err) {
-    console.warn('Backend multiple upload failed, converting images to local base64 fallback', err);
+    console.warn('Cloudinary multiple upload error', err);
   }
 
-  // Fallback to Base64
-  return Promise.all(files.map((file) => fileToBase64(file)));
+  // Upload one by one with uploadImage
+  return Promise.all(files.map((file) => uploadImage(file)));
 }
 
 // ── HERO IMAGE MANAGEMENT (4 images) ─────────────────────────────────────────

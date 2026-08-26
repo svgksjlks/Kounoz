@@ -13,6 +13,7 @@
     "@react-three/fiber": "^8.18.0",
     "@swc/helpers": "^0.5.23",
     "axios": "^1.7.2",
+    "cloudinary": "^2.10.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.3.19",
     "hls.js": "^1.7.1",
