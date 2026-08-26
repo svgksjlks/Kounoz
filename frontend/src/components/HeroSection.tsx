@@ -7,13 +7,17 @@ import { ArrowDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getHeroImages, getHeroBadge } from '../lib/api';
 
-const DEFAULT_IMAGE =
-  'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=1000&q=85';
+const DEFAULT_IMAGE = '/products/1/1.png';
 
 export function HeroSection() {
   // ── Hydration-safe: render defaults first, then hydrate from localStorage ──
   const [mounted, setMounted]         = useState(false);
-  const [images, setImages]           = useState<string[]>([DEFAULT_IMAGE, '', '', '']);
+  const [images, setImages]           = useState<string[]>([
+    '/products/1/1.png',
+    '/products/1/2.png',
+    '/products/1/3.png',
+    '/products/1/4.png',
+  ]);
   const [badge, setBadge]             = useState({ name: 'جلابية كنوز الملكية', material: 'قطن مصري 100% نقي' });
   const [activeIdx, setActiveIdx]     = useState(0);
 
