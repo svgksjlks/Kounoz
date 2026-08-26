@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   SINGLE SOURCE OF TRUTH — KOUNOZ LUXURY COLOR SYSTEM
+   ========================================================================== */
+:root {
+  /* Kounoz Official Palette */
+  --kounoz-camel: #8C6B4F;      /* بني كنوز */
+  --kounoz-gold: #AD8A55;       /* ذهبي كنوز */
+  --kounoz-softgold: #D8C6A3;   /* ذهبي فاتح */
+  --kounoz-deepivory: #EFE9DB;  /* عاجي غامق */
+  --kounoz-ivory: #F6F2E9;      /* عاجي */
+
+  /* Backgrounds */
+  --bg-main: #F6F2E9;           /* عاجي / Ivory */
+  --bg-card: #FFFFFF;           /* Pure white card */
+  --bg-surface: #EFE9DB;        /* عاجي غامق / Deep Ivory */
+  --bg-muted: #D8C6A3;          /* ذهبي فاتح / Soft Gold */
+
+  /* Text & Foreground */
+  --text-main: #1C1610;         /* Deep Charcoal Kounoz Noir */
+  --text-muted: #705F4E;        /* Kounoz Refined Camel Brown */
+  --text-light: #9B8B7B;        /* Muted Caption */
+
+  /* Luxury Accent */
+  --accent: #AD8A55;            /* ذهبي كنوز / Kounoz Gold */
+  --accent-hover: #8C6B4F;      /* بني كنوز / Kounoz Camel */
+  --accent-light: #EFE9DB;      /* عاجي غامق / Deep Ivory */
+
+  /* Borders & Dividers */
+  --border-subtle: #E2D7C3;     /* Subtle Ivory-Gold border */
+  --border-focus: #8C6B4F;      /* Active Kounoz Camel border */
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'IBM Plex Sans Arabic', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: 'Cairo', 'Amiri', serif, sans-serif;
+}
+
+.font-serif {
+  font-family: 'Amiri', 'Cairo', serif;
+}
+
+/* Micro-interaction & smooth transition helpers */
+.transition-smooth {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-hover {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(20, 20, 22, 0.06);
+}
+
+/* Minimal subtle scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Continuous Marquee Ticker */
+@keyframes ticker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+.animate-ticker {
+  display: flex;
+  width: max-content;
+  animation: ticker 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
