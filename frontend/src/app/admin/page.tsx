@@ -33,6 +33,8 @@ import {
   Phone,
   ExternalLink,
   Save,
+  Download,
+  UploadCloud,
 } from 'lucide-react';
 import { Product, CATEGORIES, Category, User, Color } from '../../types';
 import {
@@ -40,6 +42,8 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  getLocalProducts,
+  saveLocalProducts,
   loginAdmin,
   getAdminUser,
   logoutAdmin,
@@ -401,6 +405,40 @@ export default function AdminPage() {
       showToast(`تم حذف "${name}" بنجاح`);
       loadProductList();
     }
+  };
+
+  const handleExportProducts = () => {
+    const current = getLocalProducts();
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(current, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `kounoz_products_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast('تم تصدير ملف المنتجات بنجاح ✅');
+  };
+
+  const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          saveLocalProducts(parsed);
+          loadProductList();
+          showToast(`تم استيراد وحفظ ${parsed.length} قطعة بنجاح! ✅`);
+        } else {
+          alert('ملف JSON غير صالح');
+        }
+      } catch {
+        alert('خطأ في قراءة ملف JSON');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const [isSaving, setIsSaving] = useState(false);
@@ -1082,16 +1120,42 @@ export default function AdminPage() {
               <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted" />
             </div>
 
-            {/* Add Product Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={openAddModal}
-              className="w-full sm:w-auto px-6 py-3 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
-            >
-              <Plus size={16} />
-              <span>إضافة قطعة جديدة (مع 4 أشكال)</span>
-            </motion.button>
+            {/* Action Buttons: Add + Export + Import */}
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleExportProducts}
+                className="px-3.5 py-2.5 bg-surface hover:bg-[#EFE9DB] text-noir text-xs font-bold rounded-md border border-border-subtle transition-smooth flex items-center gap-1.5 shadow-xs"
+                title="تنزيل نسخة احتياطية من كل المنتجات والصور كملف JSON لنقلها لأي جهاز أو دومين"
+              >
+                <Download size={14} className="text-[#AD8A55]" />
+                <span>تصدير المنتجات (نسخة JSON)</span>
+              </button>
+
+              <label
+                className="cursor-pointer px-3.5 py-2.5 bg-surface hover:bg-[#EFE9DB] text-noir text-xs font-bold rounded-md border border-border-subtle transition-smooth flex items-center gap-1.5 shadow-xs"
+                title="استيراد المنتجات من ملف JSON وحفظها فوراً"
+              >
+                <UploadCloud size={14} className="text-[#AD8A55]" />
+                <span>استيراد منتجات</span>
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={handleImportProducts}
+                />
+              </label>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={openAddModal}
+                className="px-5 py-2.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
+              >
+                <Plus size={16} />
+                <span>إضافة قطعة جديدة</span>
+              </motion.button>
+            </div>
           </div>
 
           {/* Category Filter Pills */}
