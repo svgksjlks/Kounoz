@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,7 +28,7 @@ import { User } from '../../types';
 
 const POPULAR_DOMAINS = ['@gmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@github.com'];
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
@@ -590,5 +590,22 @@ export default function LoginPage() {
         <p>© 2026 دار كنوز للأزياء التراثية والملكية — جميع الحقوق محفوظة</p>
       </footer>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FBF8F2] flex items-center justify-center" dir="rtl">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-10 h-10 animate-spin text-[#AD8A55] mx-auto" />
+            <p className="text-xs text-[#705F4E]">جاري تحميل صفحة الدخول...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
