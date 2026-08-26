@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import {
   Plus,
   Trash2,
@@ -28,6 +29,10 @@ import {
   Ruler,
   Package,
   Tag,
+  MessageCircle,
+  Phone,
+  ExternalLink,
+  Save,
 } from 'lucide-react';
 import { Product, CATEGORIES, Category, User, Color } from '../../types';
 import {
@@ -38,12 +43,17 @@ import {
   loginAdmin,
   getAdminUser,
   logoutAdmin,
+  isAdminEmail,
   uploadImage,
   uploadMultipleImages,
   getHeroImages,
   saveHeroImages,
   getHeroBadge,
   saveHeroBadge,
+  getStoreSettings,
+  saveStoreSettings,
+  formatWhatsAppPhone,
+  formatWhatsAppUrl,
 } from '../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -65,7 +75,9 @@ const PRESET_SIZES_JALABIYA = ['50L', '52L', '54L', '56L', '58L', '60L', '62L'];
 const PRESET_SIZES_STANDARD = ['S', 'M', 'L', 'XL', '2XL', '3XL', 'مقاس موحد'];
 
 export default function AdminPage() {
+  const { data: session, status: sessionStatus } = useSession();
   const [adminUser, setAdminUser] = useState<User | null>(null);
+  const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [emailInput, setEmailInput] = useState('admin@kounoz.sa');
   const [passwordInput, setPasswordInput] = useState('admin123');
   const [loginError, setLoginError] = useState('');
@@ -122,6 +134,12 @@ export default function AdminPage() {
   const [heroBadgeName, setHeroBadgeName]         = useState('جلابية كنوز الملكية');
   const [heroBadgeMaterial, setHeroBadgeMaterial] = useState('قطن مصري 100% نقي');
   const [heroSaved, setHeroSaved]                 = useState(false);
+
+  // ── WhatsApp & Store Settings State ───────────────────────────────────────
+  const [whatsappNumber, setWhatsappNumber]       = useState('01000943197');
+  const [whatsappGreeting, setWhatsappGreeting]   = useState('مرحباً، أود الاستفسار والطلب من تشكيلة كنوز الفاخرة');
+  const [whatsappSaved, setWhatsappSaved]         = useState(false);
+  const [isSavingWhatsapp, setIsSavingWhatsapp]   = useState(false);
 
   // Upload States (for products)
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
@@ -212,15 +230,52 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const user = getAdminUser();
-    if (user) setAdminUser(user);
+    if (session?.user?.email) {
+      // Only grant admin access if the email is whitelisted
+      if (isAdminEmail(session.user.email)) {
+        setAdminUser({
+          id: 1,
+          name: session.user.name || 'مدير كنوز',
+          email: session.user.email,
+          is_admin: true,
+        });
+      }
+    } else {
+      const stored = getAdminUser();
+      if (stored && isAdminEmail(stored.email)) setAdminUser(stored);
+    }
     loadProductList();
     // Load hero images + badge
     const imgs = getHeroImages();
     if (imgs?.length) setHeroImages(imgs);
     const badge = getHeroBadge();
     if (badge) { setHeroBadgeName(badge.name); setHeroBadgeMaterial(badge.material); }
-  }, []);
+    // Load store settings & WhatsApp number
+    const settings = getStoreSettings();
+    if (settings.whatsapp_number) setWhatsappNumber(settings.whatsapp_number);
+    if (settings.whatsapp_greeting) setWhatsappGreeting(settings.whatsapp_greeting);
+  }, [session]);
+
+  const handleSaveWhatsapp = async () => {
+    if (!whatsappNumber.trim()) {
+      alert('يرجى إدخال رقم الواتساب للطلب');
+      return;
+    }
+    setIsSavingWhatsapp(true);
+    try {
+      await saveStoreSettings({
+        whatsapp_number: whatsappNumber.trim(),
+        whatsapp_greeting: whatsappGreeting.trim(),
+      });
+      setWhatsappSaved(true);
+      setTimeout(() => setWhatsappSaved(false), 3000);
+      showToast('تم حفظ رقم الواتساب وتحديث المتجر بنجاح ✅');
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ الإعدادات');
+    } finally {
+      setIsSavingWhatsapp(false);
+    }
+  };
 
   async function loadProductList() {
     setLoading(true);
@@ -246,9 +301,12 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     logoutAdmin();
     setAdminUser(null);
+    if (session) {
+      await signOut({ callbackUrl: '/admin' });
+    }
   };
 
   const openAddModal = () => {
@@ -398,7 +456,48 @@ export default function AdminPage() {
 
   const currentPreviewUrl = [formData.shape1, formData.shape2, formData.shape3, formData.shape4][previewShapeIndex] || formData.shape1;
 
-  // ── 1. LOGIN SCREEN IF NOT AUTHENTICATED ──────────────────────────────────
+  // ── 1. LOADING STATE ────────────────────────────────────────────────────────
+  if (sessionStatus === 'loading') {
+    return (
+      <div className="min-h-screen bg-main flex items-center justify-center" dir="rtl">
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin text-accent mx-auto" size={40} />
+          <p className="text-sm text-muted">جاري التحقق من الهوية...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 2. UNAUTHORIZED GOOGLE USER ──────────────────────────────────────────────
+  if (session?.user?.email && !isAdminEmail(session.user.email)) {
+    return (
+      <div className="min-h-screen bg-main flex items-center justify-center p-6" dir="rtl">
+        <div className="w-full max-w-md bg-card p-8 rounded-xl border border-red-200 shadow-xl space-y-6 text-center">
+          <div className="w-16 h-16 mx-auto rounded-full bg-red-50 flex items-center justify-center">
+            <ShieldCheck className="text-red-500" size={32} />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-noir">غير مصرح بالدخول</h2>
+          <p className="text-xs text-muted leading-relaxed">
+            حسابك (<span className="font-bold text-noir">{session.user?.email}</span>) غير مضاف في قائمة المديرين المعتمدين.
+            فقط الحسابات المعتمدة يمكنها الوصول للوحة التحكم.
+          </p>
+          <button
+            onClick={() => signOut({ callbackUrl: '/admin' })}
+            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2"
+          >
+            <LogOut size={14} />
+            الخروج والمحاولة بحساب آخر
+          </button>
+          <Link href="/" className="text-xs text-muted hover:text-noir transition-smooth inline-flex items-center gap-1 justify-center">
+            <span>العودة لمتجر كنوز</span>
+            <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 3. LOGIN SCREEN IF NOT AUTHENTICATED ──────────────────────────────────
   if (!adminUser) {
     return (
       <div className="min-h-screen bg-main flex items-center justify-center p-6" dir="rtl">
@@ -408,7 +507,7 @@ export default function AdminPage() {
               <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" />
             </div>
             <h1 className="font-serif text-3xl font-bold text-noir">لوحة تحكم إدارة كنوز</h1>
-            <p className="text-xs text-muted">تسجيل الدخول لإدارة المنتجات والصور المتعددة (4 أشكال)</p>
+            <p className="text-xs text-muted">تسجيل الدخول لإدارة المنتجات والصور</p>
           </div>
 
           {loginError && (
@@ -417,39 +516,67 @@ export default function AdminPage() {
             </div>
           )}
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div className="space-y-1 text-right">
-              <label className="text-xs font-bold text-noir">البريد الإلكتروني للمدير</label>
-              <input
-                type="email"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
-              />
-            </div>
+          {/* Google Sign In Button */}
+          <button
+            onClick={() => signIn('google', { callbackUrl: `${window.location.origin}/admin` })}
+            className="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-3"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            ادخل بـ Google
+          </button>
 
-            <div className="space-y-1 text-right">
-              <label className="text-xs font-bold text-noir">كلمة المرور</label>
-              <input
-                type="password"
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
-              />
-            </div>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <div className="flex-1 h-px bg-border-subtle"></div>
+            <span>أو</span>
+            <div className="flex-1 h-px bg-border-subtle"></div>
+          </div>
 
+          {/* Toggle Password Login */}
+          {!showPasswordLogin ? (
             <button
-              type="submit"
-              className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-md flex items-center justify-center gap-2"
+              onClick={() => setShowPasswordLogin(true)}
+              className="w-full py-2.5 text-xs text-muted hover:text-noir border border-border-subtle rounded-md transition-smooth"
             >
-              <Lock size={14} />
-              دخول لوحة التحكم
+              الدخول بكلمة المرور (احتياطي)
             </button>
-          </form>
+          ) : (
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-1 text-right">
+                <label className="text-xs font-bold text-noir">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div className="space-y-1 text-right">
+                <label className="text-xs font-bold text-noir">كلمة المرور</label>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-md flex items-center justify-center gap-2"
+              >
+                <Lock size={14} />
+                دخول لوحة التحكم
+              </button>
+            </form>
+          )}
 
-          <div className="pt-4 border-t border-border-subtle text-center">
+          <div className="pt-2 border-t border-border-subtle text-center">
             <Link href="/" className="text-xs text-muted hover:text-noir transition-smooth inline-flex items-center gap-1">
               <span>العودة لمتجر كنوز</span>
               <ArrowRight size={13} />
@@ -459,6 +586,7 @@ export default function AdminPage() {
       </div>
     );
   }
+
 
   // ── 2. ADMIN DASHBOARD VIEW ────────────────────────────────────────────────
   return (
@@ -516,6 +644,140 @@ export default function AdminPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 sm:px-10 py-10 space-y-8">
+
+        {/* ── WhatsApp Order & Contact Manager ───────────────────────────── */}
+        <div className="bg-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-[#1C1610] text-[#F6F2E9]">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-400">
+                <MessageCircle size={20} className="fill-current" />
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+                  <span>إعدادات رقم الواتساب والطلب المباشر</span>
+                  <Sparkles size={14} className="text-[#AD8A55]" />
+                </h2>
+                <p className="text-[11px] text-[#D8C6A3]">تحكم في رقم الواتساب الذي يستقبل طلبات واستفسارات العملاء من المتجر</p>
+              </div>
+            </div>
+
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-700/50 text-emerald-400 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>الواتساب متصل بالمتجر</span>
+            </div>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-8 space-y-4 text-right">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Phone Number Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-noir flex items-center gap-1.5">
+                    <Phone size={13} className="text-emerald-700" />
+                    <span>رقم الواتساب المعتمد للطلب:</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      placeholder="01000943197 أو +201000943197"
+                      className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs font-mono font-bold text-noir focus:border-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted">
+                    يقبل الرقم المصري المباشر (مثل 01000943197) أو السعودي أو الدولي بكود الدولة.
+                  </p>
+                </div>
+
+                {/* Formatted Preview */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-noir block">
+                    الصيغة الدولية والرابط المباشر:
+                  </label>
+                  <div className="px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs text-emerald-900">
+                    <span className="font-mono font-bold">{formatWhatsAppPhone(whatsappNumber)}</span>
+                    <a
+                      href={formatWhatsAppUrl(whatsappNumber, 'تجربة رسالة طلب من متجر كنوز')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline"
+                    >
+                      <span>تجربة الرابط</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  </div>
+                  <p className="text-[10px] text-muted">
+                    يتم تحويله تلقائياً إلى رابط <span className="font-mono font-semibold">wa.me</span> جاهز للمحادثة.
+                  </p>
+                </div>
+              </div>
+
+              {/* Greeting Note */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-noir block">
+                  نص الرسالة الترحيبية الافتراضية:
+                </label>
+                <input
+                  type="text"
+                  value={whatsappGreeting}
+                  onChange={(e) => setWhatsappGreeting(e.target.value)}
+                  placeholder="مرحباً، أود الاستفسار والطلب من تشكيلة كنوز الفاخرة"
+                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs text-noir focus:border-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              {/* Save Button */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSaveWhatsapp}
+                  disabled={isSavingWhatsapp}
+                  className="w-full sm:w-auto px-8 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition-smooth shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSavingWhatsapp ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : whatsappSaved ? (
+                    <Check size={14} />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  <span>{whatsappSaved ? 'تم حفظ الرقم بنجاح!' : 'حفظ وتطبيق رقم الواتساب في كامل المتجر'}</span>
+                </motion.button>
+
+                <span className="text-[11px] text-muted">
+                  * يتم تحديث الأيقونة العائمة، صفحة تفاصيل القطعة، والسلة فورياً بدون إعادة تحميل.
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Overview Card */}
+            <div className="lg:col-span-4 p-4 bg-surface rounded-xl border border-border-subtle space-y-3 text-right">
+              <span className="text-xs font-bold text-noir block border-b border-border-subtle pb-2">
+                أماكن ظهور الواتساب في متجر كنوز:
+              </span>
+              <ul className="space-y-2 text-xs text-muted">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  <span><strong>الأيقونة العائمة:</strong> أسفل يسار الشاشة في جميع الصفحات.</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  <span><strong>صفحة القطعة:</strong> زر "طلب فوري مباشر عبر واتساب" مع تفاصيل المقاس واللون والسعر.</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  <span><strong>المعاينة السريعة:</strong> زر طلب فوري بنقرة واحدة.</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  <span><strong>حقيبة المشتريات:</strong> إرسال كامل محتويات السلة في رسالة منسقة.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
 
         {/* ── Hero Image Manager (4 slots) ───────────────────────────── */}
         <div className="bg-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
@@ -880,9 +1142,9 @@ export default function AdminPage() {
                       <td className="p-4 text-muted font-medium">{product.category}</td>
 
                       <td className="p-4">
-                        <span className="font-extrabold text-noir">{product.price} ر.س</span>
+                        <span className="font-extrabold text-noir">{product.price} ج.م</span>
                         {product.original_price && (
-                          <span className="text-[10px] text-muted line-through mr-1.5">{product.original_price}</span>
+                          <span className="text-[10px] text-muted line-through mr-1.5">{product.original_price} ج.م</span>
                         )}
                       </td>
 
@@ -1055,7 +1317,7 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-xs font-bold text-noir">السعر (ر.س) *</label>
+                        <label className="text-xs font-bold text-noir">السعر (ج.م) *</label>
                         <input
                           type="number"
                           placeholder="380"
@@ -1522,7 +1784,7 @@ export default function AdminPage() {
                     <div className="p-3.5 rounded-lg bg-card border border-border-subtle space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-noir block">{formData.name || 'اسم القطعة هنا'}</span>
-                        <span className="text-xs font-extrabold text-accent block">{formData.price || '0'} ر.س</span>
+                        <span className="text-xs font-extrabold text-accent block">{formData.price || '0'} ج.م</span>
                       </div>
 
                       {/* Live Stock Badge */}

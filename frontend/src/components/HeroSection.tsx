@@ -144,14 +144,14 @@ export function HeroSection() {
             <div className="absolute inset-0 bg-gradient-to-t from-noir/40 via-transparent to-transparent pointer-events-none" />
 
             {/* Floating badge */}
-            <div className="absolute bottom-5 right-5 left-5 p-4 rounded-md bg-card/90 backdrop-blur-md border border-border-subtle flex items-center justify-between text-noir shadow-sm">
-              <div className="flex flex-col">
-                <span className="text-xs font-bold">{mounted ? badge.name : 'جلابية كنوز الملكية'}</span>
-                <span className="text-[11px] text-muted">{mounted ? badge.material : 'قطن مصري 100% نقي'}</span>
+            <div className="absolute bottom-5 right-5 left-5 p-4 rounded-xl bg-[#141416]/90 backdrop-blur-md border border-white/20 flex items-center justify-between text-white shadow-2xl">
+              <div className="flex flex-col text-right">
+                <span className="text-xs sm:text-sm font-bold text-white tracking-wide">{mounted ? badge.name : 'جلابية كنوز الملكية'}</span>
+                <span className="text-[11px] text-[#D8C6A3] font-medium">{mounted ? badge.material : 'قطن مصري 100% نقي'}</span>
               </div>
               <Link
                 href="/products/1"
-                className="px-3.5 py-1.5 rounded bg-noir text-white text-[11px] font-bold hover:bg-accent transition-smooth"
+                className="px-4 py-2 rounded-lg bg-[#AD8A55] hover:bg-[#8C6B4F] text-white text-xs font-bold transition-all shadow-md"
               >
                 عرض التفاصيل
               </Link>

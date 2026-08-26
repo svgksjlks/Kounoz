@@ -4,68 +4,96 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Check if Cloudinary is configured
+const hasCloudinary = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+let storage;
+let cloudinary = null;
+
+if (hasCloudinary) {
+  const { v2 } = require('cloudinary');
+  const { CloudinaryStorage } = require('multer-storage-cloudinary');
+  cloudinary = v2;
+
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+
+  storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: 'kounoz-products',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif'],
+      transformation: [
+        { quality: 'auto', fetch_format: 'auto' },
+        { width: 1400, height: 1400, crop: 'limit' },
+      ],
+    },
+  });
+} else {
+  // Local fallback storage
+  const uploadsDir = path.join(__dirname, '../../uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, 'kounoz-' + uniqueSuffix + ext);
+    },
+  });
 }
 
-// Multer storage configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, 'product-' + uniqueSuffix + ext);
-  },
-});
-
-// File filter for images only
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'image/svg+xml',
-    'image/avif',
-  ];
-
-  if (allowedMimeTypes.includes(file.mimetype) || file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error('يسمح فقط برفع ملفات الصور (JPG, PNG, WEBP, GIF, SVG)'), false);
+    cb(new Error('يسمح فقط برفع ملفات الصور'), false);
   }
 };
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max per image
-  },
+  storage,
+  fileFilter,
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB max
 });
 
-// Single image upload: POST /api/upload
-router.post('/', upload.single('image'), (req, res) => {
+// ── POST /api/upload — Single image ────────────────────────────────────────
+router.post('/', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: 'لم يتم اختيار أي ملف للرفع' });
     }
 
-    const host = req.get('host');
-    const protocol = req.protocol;
-    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    let url;
+    if (hasCloudinary) {
+      url = req.file.path || req.file.secure_url;
+    } else {
+      const host = req.get('host');
+      const protocol = req.protocol;
+      url = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
 
     res.json({
       success: true,
-      url: fileUrl,
-      relativePath: `/uploads/${req.file.filename}`,
-      filename: req.file.filename,
-      message: 'تم رفع الصورة بنجاح من الجهاز',
+      url,
+      provider: hasCloudinary ? 'cloudinary' : 'local',
+      public_id: req.file.filename,
+      message: hasCloudinary
+        ? 'تم رفع الصورة على Cloudinary بنجاح ☁️'
+        : 'تم رفع الصورة محلياً بنجاح (أضف بيانات Cloudinary للرفع السحابي)',
     });
   } catch (err) {
     console.error('Upload error:', err);
@@ -73,25 +101,31 @@ router.post('/', upload.single('image'), (req, res) => {
   }
 });
 
-// Multiple images upload: POST /api/upload/multiple
-router.post('/multiple', upload.array('images', 8), (req, res) => {
+// ── POST /api/upload/multiple — Multiple images ────────────────────────────
+router.post('/multiple', upload.array('images', 8), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, error: 'لم يتم اختيار أي ملفات للرفع' });
     }
 
-    const host = req.get('host');
-    const protocol = req.protocol;
-    const urls = req.files.map((file) => `${protocol}://${host}/uploads/${file.filename}`);
+    let urls;
+    if (hasCloudinary) {
+      urls = req.files.map((f) => f.path || f.secure_url);
+    } else {
+      const host = req.get('host');
+      const protocol = req.protocol;
+      urls = req.files.map((f) => `${protocol}://${host}/uploads/${f.filename}`);
+    }
 
     res.json({
       success: true,
-      urls: urls,
+      urls,
+      provider: hasCloudinary ? 'cloudinary' : 'local',
       files: req.files.map((f) => ({
-        filename: f.filename,
-        url: `${protocol}://${host}/uploads/${f.filename}`,
+        url: hasCloudinary ? (f.path || f.secure_url) : `${req.protocol}://${req.get('host')}/uploads/${f.filename}`,
+        public_id: f.filename,
       })),
-      message: `تم رفع ${req.files.length} صور بنجاح من الجهاز`,
+      message: `تم رفع ${req.files.length} صور بنجاح ${hasCloudinary ? 'على Cloudinary ☁️' : 'محلياً'}`,
     });
   } catch (err) {
     console.error('Multiple upload error:', err);

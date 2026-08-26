@@ -40,10 +40,19 @@ export function Footer() {
           <div>
             <h4 className="text-xs font-bold uppercase tracking-widest text-[#AD8A55] mb-4">خدمة العملاء والإدارة</h4>
             <ul className="space-y-3 text-sm text-[#D8C6A3] font-medium">
-              <li><a href="tel:+9668001234567" className="hover:text-white transition-smooth">الاتصال المباشر</a></li>
-              <li><a href="mailto:concierge@kounoz.sa" className="hover:text-white transition-smooth">خدمة الكونسيرج</a></li>
+              <li>
+                <a
+                  href="https://wa.me/201000943197?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D9%88%D8%A7%D9%84%D8%B7%D9%84%D8%A8%20%D9%85%D9%86%20%D9%85%D8%AA%D8%AC%D8%B1%20%D9%83%D9%86%D9%88%D8%B2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-smooth text-emerald-400 font-semibold flex items-center gap-1.5"
+                >
+                  <span>💬 الطلب المباشر عبر واتساب</span>
+                </a>
+              </li>
+              <li><a href="tel:01000943197" className="hover:text-white transition-smooth">الاتصال المباشر (01000943197)</a></li>
+              <li><a href="mailto:omargamil37@gmail.com" className="hover:text-white transition-smooth">التواصل بالبريد الإلكتروني</a></li>
               <li><Link href="/#about" className="hover:text-white transition-smooth">دليل المقاسات</Link></li>
-              <li><Link href="/admin" className="text-white font-bold hover:text-[#AD8A55] transition-smooth">لوحة تحكم الإدارة (Admin)</Link></li>
             </ul>
           </div>
         </div>

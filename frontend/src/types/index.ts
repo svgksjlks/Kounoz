@@ -40,6 +40,8 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string;
+  avatar?: string;
   is_admin?: boolean;
 }
 

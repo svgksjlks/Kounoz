@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { X, ShoppingBag, Check, ArrowLeft, Eye } from 'lucide-react';
+import { X, ShoppingBag, Check, ArrowLeft, Eye, MessageCircle, Ruler } from 'lucide-react';
 import { Product, Color } from '../types';
 import { useCart } from '../context/CartContext';
+import { formatWhatsAppUrl, getWhatsAppNumber } from '../lib/api';
+import { ProductSizeGuide } from './ProductSizeGuide';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface QuickViewModalProps {
@@ -76,6 +78,23 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
     }, 1500);
   };
 
+  const handleWhatsAppOrder = () => {
+    const colorText = selectedColor?.name ? selectedColor.name : 'اللون المعروض';
+    const message = `السلام عليكم ورحمة الله،
+أود طلب القطعة الفاخرة التالية من متجر كنوز:
+🏷️ القطعة: ${product.name}
+💰 السعر: ${product.price} ج.م
+📐 المقاس المطلوب: ${selectedSize || 'الافتراضي'}
+🎨 اللون: ${colorText}
+📦 الكمية: ${quantity}
+
+يرجى إفادتي بتوافر المقاس وطريقة الدفع والاستلام. شكراً!`;
+
+    const url = formatWhatsAppUrl(getWhatsAppNumber(), message);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    onClose();
+  };
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6" dir="rtl">
@@ -118,8 +137,10 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                   className="object-cover transition-all duration-300"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
-                <div className="absolute bottom-2.5 right-2.5 bg-noir/80 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-md">
-                  {shapeLabels[activeImageIndex] || `شكل ${activeImageIndex + 1}`}
+                <div className="absolute bottom-3 right-3 bg-[#141416]/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xl border border-white/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#C5A059] animate-pulse flex-shrink-0" />
+                  <Eye size={13} className="text-[#C5A059] flex-shrink-0" />
+                  <span className="text-white font-bold drop-shadow-sm">{shapeLabels[activeImageIndex] || `شكل ${activeImageIndex + 1}`}</span>
                 </div>
               </div>
 
@@ -142,7 +163,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                       }`}
                     >
                       <Image src={shapeUrl} alt={shapeLabels[idx] || `شكل ${idx + 1}`} fill className="object-cover" />
-                      <span className="absolute bottom-0 inset-x-0 bg-noir/70 text-white text-[8px] sm:text-[9px] py-0.5 text-center truncate px-0.5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      <span className="absolute bottom-0 inset-x-0 text-white text-[9px] sm:text-[10px] font-bold py-1 text-center truncate px-0.5 z-10 drop-shadow-md">
                         {['أمامي', 'خلفي', 'جانبي', 'نسيج'][idx] || `شكل ${idx + 1}`}
                       </span>
                     </button>
@@ -179,11 +201,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 {/* Price */}
                 <div className="flex items-baseline gap-3">
                   <span className="text-2xl font-extrabold text-noir">
-                    {product.price} ر.س
+                    {product.price} ج.م
                   </span>
                   {product.original_price && (
                     <span className="text-muted line-through text-sm">
-                      {product.original_price} ر.س
+                      {product.original_price} ج.م
                     </span>
                   )}
                 </div>
@@ -241,16 +263,34 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                     </div>
                   </div>
                 )}
+
+                {/* Smart Size Guide Accordion */}
+                <div className="pt-2">
+                  <ProductSizeGuide
+                    product={product}
+                    selectedSize={selectedSize}
+                    onSelectSize={(size) => setSelectedSize(size)}
+                    defaultOpen={false}
+                  />
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-3 pt-4 border-t border-border-subtle">
+              <div className="space-y-2.5 pt-4 border-t border-border-subtle">
                 <button
                   onClick={handleAddToCart}
                   className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
                 >
                   <ShoppingBag size={15} />
                   إضافة لحقيبة المشتريات
+                </button>
+
+                <button
+                  onClick={handleWhatsAppOrder}
+                  className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
+                >
+                  <MessageCircle size={15} className="fill-current" />
+                  <span>طلب مباشر عبر واتساب</span>
                 </button>
 
                 {addedToast && (

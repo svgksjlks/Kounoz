@@ -25,6 +25,12 @@ export default function HomePage() {
       setLoading(false);
     }
     loadData();
+
+    const handleUpdate = () => {
+      loadData();
+    };
+    window.addEventListener('kounoz_products_updated', handleUpdate);
+    return () => window.removeEventListener('kounoz_products_updated', handleUpdate);
   }, [selectedCategory]);
 
   return (

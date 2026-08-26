@@ -16,8 +16,11 @@ import {
   Mail,
   Globe,
   ChevronLeft,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { getAdminUser, isAdminEmail } from '../lib/api';
+import { useSession } from 'next-auth/react';
 
 interface SideNavProps {
   isOpen: boolean;
@@ -34,7 +37,25 @@ export function SideNav({
   onOpenSearch,
   onOpenAuth,
 }: SideNavProps) {
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState('');
+  const [adminUser, setAdminUser] = useState<any>(null);
+
+  useEffect(() => {
+    const user = getAdminUser();
+    setAdminUser(user);
+
+    const handleAuth = () => {
+      setAdminUser(getAdminUser());
+    };
+    window.addEventListener('kounoz_auth_changed', handleAuth);
+    return () => window.removeEventListener('kounoz_auth_changed', handleAuth);
+  }, []);
+
+  const isCurrentAdmin = !!(
+    (session?.user?.email && isAdminEmail(session.user.email)) ||
+    (adminUser?.email && isAdminEmail(adminUser.email))
+  );
 
   // Lock body scroll & listen for ESC key on desktop
   useEffect(() => {
@@ -197,19 +218,35 @@ export function SideNav({
                 })}
               </nav>
 
-              {/* Auth Login & Admin Panel Link */}
-              <div className="p-6 border-b border-border-subtle space-y-2">
+              {/* Auth Links (Customer Login + Admin Panel only for admin) */}
+              <div className="p-6 border-b border-border-subtle space-y-2.5">
                 <Link
-                  href="/admin"
+                  href="/login"
                   onClick={onClose}
-                  className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#AD8A55] hover:bg-[#8C6B4F] text-white text-xs font-bold transition-smooth shadow-sm"
+                  className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#1C1610] hover:bg-[#AD8A55] text-white text-xs font-bold transition-smooth shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
                     <User size={16} />
-                    <span>لوحة تحكم الإدارة (Admin)</span>
+                    <span>{isCurrentAdmin ? '👑 حساب المدير والإدارة' : 'تسجيل الدخول / حسابي'}</span>
                   </div>
-                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold">إدارة المنتجات</span>
+                  <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold">
+                    {isCurrentAdmin ? 'إدارة المتجر' : 'حساب العميل'}
+                  </span>
                 </Link>
+
+                {isCurrentAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={onClose}
+                    className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#AD8A55] hover:bg-[#8C6B4F] text-white text-xs font-bold transition-smooth shadow-md"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <ShieldCheck size={16} />
+                      <span>لوحة تحكم الإدارة (Admin Dashboard)</span>
+                    </div>
+                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold">لوحة التحكم</span>
+                  </Link>
+                )}
               </div>
 
               {/* Need Help Section (تحتاج للمساعدة؟) */}
@@ -217,7 +254,7 @@ export function SideNav({
                 <p className="text-xs font-bold text-noir tracking-wider">تحتاج للمساعدة؟</p>
                 <div className="space-y-2.5 text-xs text-muted">
                   <a
-                    href="tel:+9668001234567"
+                    href="tel:01000943197"
                     className="flex items-center gap-3 hover:text-noir transition-smooth py-1"
                   >
                     <div className="p-1.5 rounded bg-card border border-border-subtle text-accent">
@@ -225,19 +262,19 @@ export function SideNav({
                     </div>
                     <div className="flex flex-col text-right">
                       <span className="font-semibold text-noir">الاتصال المباشر</span>
-                      <span dir="ltr" className="text-muted text-[11px]">+966 800 123 4567</span>
+                      <span dir="ltr" className="text-muted text-[11px]">01000943197</span>
                     </div>
                   </a>
                   <a
-                    href="mailto:concierge@daralasala.sa"
+                    href="mailto:omargamil37@gmail.com"
                     className="flex items-center gap-3 hover:text-noir transition-smooth py-1"
                   >
                     <div className="p-1.5 rounded bg-card border border-border-subtle text-accent">
                       <Mail size={13} />
                     </div>
                     <div className="flex flex-col text-right">
-                      <span className="font-semibold text-noir">خدمة الكونسيرج</span>
-                      <span className="text-muted text-[11px]">concierge@daralasala.sa</span>
+                      <span className="font-semibold text-noir">التواصل بالبريد</span>
+                      <span className="text-muted text-[11px]">omargamil37@gmail.com</span>
                     </div>
                   </a>
                 </div>
@@ -247,10 +284,10 @@ export function SideNav({
               <div className="p-6 mt-auto flex items-center justify-between text-xs text-muted bg-main/20">
                 <div className="flex items-center gap-2">
                   <Globe size={14} className="text-accent" />
-                  <span className="font-semibold text-noir">العربية (السعودية)</span>
+                  <span className="font-semibold text-noir">العربية (مصر)</span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded bg-card border border-border-subtle text-[10px] font-bold text-noir shadow-sm">
-                  SAR ر.س
+                  EGP ج.م
                 </span>
               </div>
             </motion.div>

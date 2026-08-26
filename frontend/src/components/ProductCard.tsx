@@ -82,12 +82,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         {/* Compact Badges */}
         <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-1 z-10 pointer-events-none">
           {discountPercent && (
-            <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-noir text-white text-[9px] sm:text-[10px] font-extrabold rounded-sm tracking-wider shadow-sm">
+            <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#141416] text-white text-[9px] sm:text-[10px] font-extrabold rounded-md tracking-wider shadow-md border border-white/15">
               -{discountPercent}%
             </span>
           )}
           {product.is_new && !discountPercent && (
-            <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-noir text-white text-[9px] sm:text-[10px] font-bold rounded-sm tracking-wider shadow-sm">
+            <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-[#141416] text-white text-[9px] sm:text-[10px] font-bold rounded-md tracking-wider shadow-md border border-white/15">
               جديد
             </span>
           )}
@@ -95,7 +95,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
         {/* 4 Shapes One-Click Interactive Bar on the Photo */}
         {allShapes.length > 1 && (
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 bg-card/90 backdrop-blur-md p-1 rounded-md border border-border-subtle z-20 shadow-sm">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 bg-[#141416]/90 backdrop-blur-md p-1 rounded-md border border-white/20 z-20 shadow-md">
             {allShapes.slice(0, 4).map((shapeUrl, idx) => (
               <button
                 key={idx}
@@ -104,8 +104,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
                 title={`معاينة الزاوية ${idx + 1}`}
                 className={`relative w-4 h-4 sm:w-5 sm:h-5 rounded-sm overflow-hidden border transition-all ${
                   activeImageIndex === idx
-                    ? 'border-accent ring-1.5 ring-accent scale-110 shadow-sm'
-                    : 'border-border-subtle opacity-60 hover:opacity-100 hover:scale-105'
+                    ? 'border-[#C5A059] ring-2 ring-[#C5A059] scale-110 shadow-sm'
+                    : 'border-white/30 opacity-70 hover:opacity-100 hover:scale-105'
                 }`}
               >
                 <Image src={shapeUrl} alt={`زاوية ${idx + 1}`} fill className="object-cover" />
@@ -127,17 +127,17 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               <button
                 type="button"
                 onClick={() => onQuickView && onQuickView(product)}
-                className="flex-1 py-2 sm:py-2.5 bg-card/95 backdrop-blur-md hover:bg-noir hover:text-white text-noir text-[11px] sm:text-xs font-semibold rounded sm:rounded-md flex items-center justify-center gap-1 transition-smooth shadow-sm border border-border-subtle"
+                className="flex-1 py-2 sm:py-2.5 bg-[#141416]/95 backdrop-blur-md hover:bg-[#AD8A55] text-white text-[11px] sm:text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-lg border border-white/20"
               >
-                <Eye size={12} />
+                <Eye size={13} className="text-[#C5A059]" />
                 <span className="hidden xs:inline">معاينة سريعة</span>
               </button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleQuickAdd}
-                className={`px-3 py-2 sm:px-3.5 sm:py-2.5 text-white rounded sm:rounded-md flex items-center justify-center transition-smooth shadow-sm ${
-                  addedAnimation ? 'bg-emerald-700' : 'bg-noir hover:bg-accent'
+                className={`px-3 py-2 sm:px-3.5 sm:py-2.5 text-white rounded-lg flex items-center justify-center transition-all shadow-lg border border-white/20 ${
+                  addedAnimation ? 'bg-emerald-700' : 'bg-[#141416]/95 hover:bg-[#AD8A55]'
                 }`}
                 aria-label="إضافة سريعة"
               >
@@ -186,11 +186,11 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           {/* Price */}
           <div className="flex items-baseline gap-1 sm:gap-1.5">
             <span className="font-extrabold text-noir text-xs sm:text-sm md:text-base">
-              {product.price} ر.س
+              {product.price} ج.م
             </span>
             {product.original_price && (
               <span className="text-[10px] sm:text-xs text-muted line-through font-normal">
-                {product.original_price}
+                {product.original_price} ج.م
               </span>
             )}
           </div>

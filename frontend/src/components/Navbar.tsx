@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingBag, Menu, Search, User } from 'lucide-react';
@@ -17,6 +17,11 @@ interface NavbarProps {
 export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
   const { openCart, totalItems } = useCart();
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navLinks = [
     { label: 'الرئيسية', href: '/', category: 'جميع القطع' },
@@ -104,14 +109,15 @@ export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
               <Search size={18} />
             </button>
 
-            {/* User Profile / Account Button */}
-            <button
-              onClick={() => setIsSideNavOpen(true)}
+            {/* User Profile / Login Button */}
+            <Link
+              href="/login"
               className="p-2 sm:p-2.5 rounded-md text-muted hover:text-noir hover:bg-surface transition-smooth"
-              aria-label="حسابي"
+              aria-label="تسجيل الدخول / حسابي"
+              title="تسجيل الدخول / حسابي"
             >
               <User size={18} />
-            </button>
+            </Link>
 
             {/* Cart Button */}
             <motion.button
@@ -121,7 +127,7 @@ export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
               aria-label="حقيبة المشتريات"
             >
               <ShoppingBag size={18} className="group-hover:scale-105 transition-smooth" />
-              {totalItems > 0 ? (
+              {mounted && totalItems > 0 ? (
                 <span className="absolute -top-1.5 -left-1.5 bg-noir text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-fade-in">
                   {totalItems}
                 </span>

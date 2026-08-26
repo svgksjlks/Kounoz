@@ -3,9 +3,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CartItem } from '../types';
 
+const CART_STORAGE_KEY = 'kounoz_cart';
+const LEGACY_STORAGE_KEY = 'app_cart';
+
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
+  isCartLoaded: boolean;
   openCart: () => void;
   closeCart: () => void;
   addItem: (item: Omit<CartItem, 'id'> & { id?: number }) => void;
@@ -19,27 +23,55 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  // Start with empty array on initial render to perfectly match SSR HTML
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+  // 2. Client-side hydration & sync on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('app_cart');
+      const saved = localStorage.getItem(CART_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
       if (saved) {
-        setItems(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed);
+        }
       }
-    } catch {
-      // Ignore storage errors
+    } catch (err) {
+      console.warn('Failed to load cart on mount:', err);
     }
+    setIsLoaded(true);
+
+    // Cross-tab live synchronization
+    const handleStorageChange = (e: StorageEvent) => {
+      if ((e.key === CART_STORAGE_KEY || e.key === LEGACY_STORAGE_KEY) && e.newValue) {
+        try {
+          const newItems = JSON.parse(e.newValue);
+          if (Array.isArray(newItems)) {
+            setItems(newItems);
+          }
+        } catch {
+          // Ignore
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // 3. Save to LocalStorage whenever items change ONLY after isLoaded is true
   useEffect(() => {
+    if (!isLoaded) return;
     try {
-      localStorage.setItem('app_cart', JSON.stringify(items));
-    } catch {
-      // Ignore
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(items));
+      window.dispatchEvent(new Event('kounoz_cart_updated'));
+    } catch (err) {
+      console.warn('Failed to save cart to storage:', err);
     }
-  }, [items]);
+  }, [items, isLoaded]);
 
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
@@ -47,35 +79,61 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = (item: Omit<CartItem, 'id'> & { id?: number }) => {
     setItems((prev) => {
       const existingIndex = prev.findIndex(
-        (i) => i.product_id === item.product_id && i.color === item.color
+        (i) =>
+          i.product_id === item.product_id &&
+          (i.color || '') === (item.color || '') &&
+          (i.size || '') === (item.size || '')
       );
+
+      let updatedList: CartItem[];
       if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += item.quantity;
-        return updated;
+        updatedList = [...prev];
+        updatedList[existingIndex] = {
+          ...updatedList[existingIndex],
+          quantity: updatedList[existingIndex].quantity + item.quantity,
+          price: item.price,
+          image_url: item.image_url || updatedList[existingIndex].image_url,
+        };
       } else {
         const newItem: CartItem = {
-          id: item.id || Date.now(),
+          id: item.id || Date.now() + Math.floor(Math.random() * 1000),
           product_id: item.product_id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
           color: item.color,
+          size: item.size,
           image_url: item.image_url,
         };
-        return [...prev, newItem];
+        updatedList = [...prev, newItem];
       }
+
+      // Direct write immediately as well to prevent any race condition
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updatedList));
+        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(updatedList));
+      } catch {}
+
+      return updatedList;
     });
+
     setIsOpen(true);
   };
 
   const removeItem = (id: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    setItems((prev) => {
+      const updated = prev.filter((i) => i.id !== id);
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
+        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const updateQuantity = (id: number, delta: number) => {
-    setItems((prev) =>
-      prev
+    setItems((prev) => {
+      const updated = prev
         .map((item) => {
           if (item.id === id) {
             const newQty = item.quantity + delta;
@@ -83,12 +141,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           }
           return item;
         })
-        .filter(Boolean) as CartItem[]
-    );
+        .filter(Boolean) as CartItem[];
+
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated));
+        localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(updated));
+      } catch {}
+
+      return updated;
+    });
   };
 
   const clearCart = () => {
     setItems([]);
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([]));
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify([]));
+    } catch {}
   };
 
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -99,6 +168,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         items,
         isOpen,
+        isCartLoaded: isLoaded,
         openCart,
         closeCart,
         addItem,

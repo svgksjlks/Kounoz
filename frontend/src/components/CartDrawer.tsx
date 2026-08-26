@@ -2,11 +2,17 @@
 
 import React, { useEffect } from 'react';
 import Image from 'next/image';
-import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { X, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { formatWhatsAppUrl, getWhatsAppNumber, getCurrentCustomer } from '../lib/api';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
 export function CartDrawer() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const { items, isOpen, closeCart, updateQuantity, removeItem, totalAmount, clearCart } = useCart();
 
   // Background Scroll Locking
@@ -126,7 +132,7 @@ export function CartDrawer() {
                               <p className="text-xs text-muted">اللون: {item.color}</p>
                             )}
                             <p className="text-sm font-extrabold text-noir">
-                              {item.price} ر.س
+                              {item.price} ج.م
                             </p>
                           </div>
 
@@ -172,25 +178,62 @@ export function CartDrawer() {
 
               {/* Footer */}
               {items.length > 0 && (
-                <div className="p-5 sm:p-6 border-t border-border-subtle bg-card space-y-4">
+                <div className="p-5 sm:p-6 border-t border-border-subtle bg-card space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted">المجموع الفرعي</span>
                     <span className="font-extrabold text-noir text-base">
-                      {totalAmount.toFixed(2)} ر.س
+                      {totalAmount.toFixed(0)} ج.م
                     </span>
                   </div>
                   <p className="text-[11px] text-muted leading-relaxed">
                     الضرائب والشحن الفاخر المجاني يتم احتسابها عند إتمام الطلب.
                   </p>
 
+                  {/* Complete Order via WhatsApp */}
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => alert(`تم استلام طلبك بنجاح بقيمة ${totalAmount.toFixed(2)} ر.س! شكراً لثقتكم بدار الأصالة.`)}
-                    className="w-full py-4 bg-noir text-white text-xs font-bold rounded-md hover:bg-accent transition-smooth shadow-sm"
+                    onClick={() => {
+                      const isLoggedIn = !!(session?.user || getCurrentCustomer());
+                      if (!isLoggedIn) {
+                        closeCart();
+                        router.push('/login?callbackUrl=/checkout');
+                        return;
+                      }
+
+                      const itemsSummary = items.map((it, idx) => {
+                        const colorPart = it.color ? ` | اللون: ${it.color}` : '';
+                        const sizePart = it.size ? ` | المقاس: ${it.size}` : '';
+                        return `${idx + 1}. ${it.name} (الكمية: ${it.quantity}${sizePart}${colorPart}) - ${(it.price * it.quantity).toFixed(0)} ج.م`;
+                      }).join('\n');
+
+                      const msg = `السلام عليكم ورحمة الله،
+أود إتمام وتأكيد طلبي من متجر كنوز الفاخر:
+----------------------------------------
+${itemsSummary}
+----------------------------------------
+💰 المجموع الإجمالي: ${totalAmount.toFixed(0)} ج.م
+📦 إجمالي القطع: ${items.reduce((acc, i) => acc + i.quantity, 0)}
+
+يرجى إرسال بيانات الدفع والتأكيد لتجهيز الشحن الفاخر. شكراً!`;
+
+                      const url = formatWhatsAppUrl(getWhatsAppNumber(), msg);
+                      window.open(url, '_blank', 'noopener,noreferrer');
+                    }}
+                    className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-md transition-smooth shadow-md flex items-center justify-center gap-2"
                   >
-                    متابعة الشراء وإنهاء الطلب
+                    <MessageCircle size={16} className="fill-current" />
+                    <span>إرسال وتأكيد الطلب بالكامل عبر واتساب</span>
                   </motion.button>
+
+                  <Link
+                    href="/checkout"
+                    onClick={closeCart}
+                    className="w-full py-3.5 bg-[#1C1C1E] hover:bg-[#C5A059] text-white text-xs font-bold rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart size={14} />
+                    إتمام الطلب والدفع
+                  </Link>
 
                   <button
                     onClick={clearCart}

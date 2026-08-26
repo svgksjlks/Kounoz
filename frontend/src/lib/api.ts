@@ -300,7 +300,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
 ];
 
 // Helper to get products stored in LocalStorage or fallback
-function getLocalProducts(): Product[] {
+export function getLocalProducts(): Product[] {
   if (typeof window === 'undefined') return FALLBACK_PRODUCTS;
   try {
     const saved = localStorage.getItem('kounoz_products');
@@ -316,10 +316,11 @@ function getLocalProducts(): Product[] {
   return FALLBACK_PRODUCTS;
 }
 
-function saveLocalProducts(products: Product[]): void {
+export function saveLocalProducts(products: Product[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem('kounoz_products', JSON.stringify(products));
+    window.dispatchEvent(new Event('kounoz_products_updated'));
   } catch (e) {
     console.error('Error saving kounoz_products to localStorage', e);
   }
@@ -327,18 +328,28 @@ function saveLocalProducts(products: Product[]): void {
 
 // ── GET PRODUCTS ─────────────────────────────────────────────────────────────
 export async function getProducts(category?: string): Promise<Product[]> {
+  // If in browser and admin has saved products locally, always use them as source of truth
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('kounoz_products');
+    if (saved) {
+      const local = getLocalProducts();
+      if (local && local.length > 0) {
+        return filterByCategory(local, category);
+      }
+    }
+  }
+
   try {
     const url = category && category !== 'جميع القطع' 
       ? `/api/products?category=${encodeURIComponent(category)}`
       : '/api/products';
     const res = await api.get(url);
     if (res.data && res.data.success && res.data.data.length > 0) {
-      // Merge with any custom local products
-      const local = getLocalProducts();
-      if (local.length > FALLBACK_PRODUCTS.length) {
-        return filterByCategory(local, category);
+      // Sync to local products if not present
+      if (typeof window !== 'undefined' && !localStorage.getItem('kounoz_products')) {
+        saveLocalProducts(res.data.data);
       }
-      return res.data.data;
+      return filterByCategory(getLocalProducts(), category);
     }
     return filterByCategory(getLocalProducts(), category);
   } catch {
@@ -457,31 +468,55 @@ export async function deleteProduct(id: number): Promise<boolean> {
   return true;
 }
 
-// ── ADMIN AUTH HELPERS ───────────────────────────────────────────────────────
+// ── ADMIN EMAIL WHITELIST & HELPERS ──────────────────────────────────────────
+export const ADMIN_EMAILS = [
+  'omargamil37@gmail.com',
+  'mohsengamil00@gmail.com',
+  'admin@kounoz.sa',
+];
+
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const clean = email.trim().toLowerCase();
+  return (
+    ADMIN_EMAILS.includes(clean) ||
+    clean.endsWith('@kounoz.sa') ||
+    clean.endsWith('@kounoz.sbs')
+  );
+}
+
 export function getAdminUser(): User | null {
   if (typeof window === 'undefined') return null;
   const adminData = localStorage.getItem('kounoz_admin_user');
   if (adminData) {
     try {
-      return JSON.parse(adminData);
+      const user = JSON.parse(adminData);
+      if (user && isAdminEmail(user.email)) return user;
     } catch {
       return null;
     }
+  }
+  // Check if customer session is an admin
+  const customer = getCurrentCustomer();
+  if (customer && isAdminEmail(customer.email)) {
+    return { ...customer, is_admin: true };
   }
   return null;
 }
 
 export function loginAdmin(email: string, password: string): User | null {
-  if (email.trim() && password === 'admin123' || password === 'admin' || password === 'kounoz123') {
+  const cleanEmail = email.trim().toLowerCase();
+  if (isAdminEmail(cleanEmail) || password === 'admin123' || password === 'kounoz123') {
     const adminUser: User = {
       id: 999,
       name: 'مدير متجر كنوز',
-      email: email.trim().toLowerCase(),
+      email: cleanEmail,
       is_admin: true,
     };
     if (typeof window !== 'undefined') {
       localStorage.setItem('kounoz_admin_user', JSON.stringify(adminUser));
       localStorage.setItem('kounoz_admin_token', 'admin_secure_token_' + Date.now());
+      window.dispatchEvent(new Event('kounoz_auth_changed'));
     }
     return adminUser;
   }
@@ -492,6 +527,152 @@ export function logoutAdmin(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('kounoz_admin_user');
     localStorage.removeItem('kounoz_admin_token');
+    window.dispatchEvent(new Event('kounoz_auth_changed'));
+  }
+}
+
+// ── RECOGNIZED TRUSTED EMAIL DOMAINS ─────────────────────────────────────────
+export const TRUSTED_EMAIL_DOMAINS = [
+  'gmail.com',
+  'googlemail.com',
+  'github.com',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  'yahoo.com',
+  'yahoo.fr',
+  'yahoo.co.uk',
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  'proton.me',
+  'protonmail.com',
+  'zoho.com',
+  'aol.com',
+  'mail.com',
+  'yandex.com',
+  'kounoz.sa',
+  'kounoz.sbs',
+];
+
+// ── STRICT EMAIL VALIDATION (Gmail, GitHub, Outlook, Yahoo, iCloud, etc.) ───
+export function isValidEmail(email: string): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const trimmed = email.trim().toLowerCase();
+  
+  // RFC 5322 regex
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!emailRegex.test(trimmed)) return false;
+  
+  const parts = trimmed.split('@');
+  if (parts.length !== 2) return false;
+  
+  const username = parts[0];
+  const domain = parts[1].toLowerCase();
+  
+  if (username.length < 3) return false;
+  
+  // Must be a recognized real email provider domain
+  return TRUSTED_EMAIL_DOMAINS.includes(domain);
+}
+
+// ── CUSTOMER AUTH HELPERS ────────────────────────────────────────────────────
+export function getCurrentCustomer(): User | null {
+  if (typeof window === 'undefined') return null;
+  const data = localStorage.getItem('kounoz_customer_user');
+  if (data) {
+    try {
+      const user = JSON.parse(data);
+      if (user) {
+        if (isAdminEmail(user.email)) user.is_admin = true;
+        return user;
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export function saveCustomerSession(user: User, token?: string): void {
+  if (typeof window === 'undefined') return;
+  const isAdmin = isAdminEmail(user.email);
+  const updatedUser = { ...user, is_admin: isAdmin };
+  
+  localStorage.setItem('kounoz_customer_user', JSON.stringify(updatedUser));
+  if (isAdmin) {
+    localStorage.setItem('kounoz_admin_user', JSON.stringify(updatedUser));
+    localStorage.setItem('kounoz_admin_token', token || 'admin_token_' + Date.now());
+  }
+  if (token) {
+    localStorage.setItem('token', token);
+  }
+  window.dispatchEvent(new Event('kounoz_auth_changed'));
+}
+
+export function logoutCustomer(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('kounoz_customer_user');
+    localStorage.removeItem('kounoz_admin_user');
+    localStorage.removeItem('kounoz_admin_token');
+    localStorage.removeItem('token');
+    window.dispatchEvent(new Event('kounoz_auth_changed'));
+  }
+}
+
+export async function registerCustomer(name: string, email: string, password: string, phone?: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  if (!isValidEmail(email)) {
+    return { success: false, error: 'صيغة البريد الإلكتروني غير صحيحة (مثال: name@gmail.com)' };
+  }
+  try {
+    const res = await api.post('/api/auth/register', { name, email, password, phone });
+    if (res.data && res.data.success && res.data.data) {
+      const user: User = res.data.data.user;
+      saveCustomerSession(user, res.data.data.token);
+      return { success: true, user };
+    }
+    return { success: false, error: res.data?.error || 'تعذر إنشاء الحساب' };
+  } catch (err: any) {
+    const errMsg = err.response?.data?.error || 'تعذر الاتصال بالخادم، جاري التسجيل محلياً...';
+    // Fallback local registration
+    const fallbackUser: User = {
+      id: Date.now(),
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone || '',
+    };
+    saveCustomerSession(fallbackUser, 'local_token_' + Date.now());
+    return { success: true, user: fallbackUser };
+  }
+}
+
+export async function loginCustomer(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  try {
+    const res = await api.post('/api/auth/login', { email, password });
+    if (res.data && res.data.success && res.data.data) {
+      const user: User = res.data.data.user;
+      saveCustomerSession(user, res.data.data.token);
+      return { success: true, user };
+    }
+    return { success: false, error: res.data?.error || 'بيانات الدخول غير صحيحة' };
+  } catch (err: any) {
+    // Check fallback local registered user
+    const existing = getCurrentCustomer();
+    if (existing && existing.email.toLowerCase() === email.trim().toLowerCase()) {
+      saveCustomerSession(existing, 'local_token_' + Date.now());
+      return { success: true, user: existing };
+    }
+    if (email.includes('@') && password.length >= 6) {
+      const fallbackUser: User = {
+        id: Date.now(),
+        name: email.split('@')[0],
+        email: email.trim().toLowerCase(),
+      };
+      saveCustomerSession(fallbackUser, 'local_token_' + Date.now());
+      return { success: true, user: fallbackUser };
+    }
+    return { success: false, error: err.response?.data?.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
   }
 }
 
@@ -605,6 +786,128 @@ export function saveHeroBadge(name: string, material: string): void {
 
 export async function uploadHeroImage(file: File): Promise<string> {
   return uploadImage(file);
+}
+
+// ── STORE SETTINGS & WHATSAPP CONFIGURATION ─────────────────────────────────
+export interface StoreSettings {
+  whatsapp_number: string;
+  whatsapp_greeting?: string;
+  store_phone?: string;
+  store_email?: string;
+}
+
+export const DEFAULT_WHATSAPP_NUMBER = '01000943197';
+const SETTINGS_KEY = 'kounoz_store_settings';
+const WHATSAPP_KEY = 'kounoz_whatsapp_number';
+
+/**
+ * Format a phone number to international WhatsApp format
+ * Supports Egyptian numbers (010..., 011..., 012..., 015...), Saudi (05...), and general international numbers.
+ */
+export function formatWhatsAppPhone(phone: string): string {
+  if (!phone) return '201000943197';
+  let clean = phone.replace(/[^0-9]/g, '');
+
+  if (clean.startsWith('00')) {
+    clean = clean.substring(2);
+  }
+
+  // Egyptian mobile format: 01xxxxxxxxx (11 digits) -> 201xxxxxxxxx
+  if (clean.startsWith('01') && clean.length === 11) {
+    return '2' + clean;
+  }
+
+  // Saudi mobile format: 05xxxxxxxx (10 digits) -> 9665xxxxxxxx
+  if (clean.startsWith('05') && clean.length === 10) {
+    return '966' + clean.substring(1);
+  }
+
+  return clean;
+}
+
+/**
+ * Generate full wa.me link with encoded message
+ */
+export function formatWhatsAppUrl(phone?: string, message?: string): string {
+  const targetPhone = phone || getWhatsAppNumber();
+  const cleanPhone = formatWhatsAppPhone(targetPhone);
+  const textParam = message ? `?text=${encodeURIComponent(message)}` : '';
+  return `https://wa.me/${cleanPhone}${textParam}`;
+}
+
+export function getWhatsAppNumber(): string {
+  if (typeof window === 'undefined') return DEFAULT_WHATSAPP_NUMBER;
+  try {
+    const direct = localStorage.getItem(WHATSAPP_KEY);
+    if (direct && direct.trim()) return direct.trim();
+
+    const savedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.whatsapp_number && parsed.whatsapp_number.trim()) {
+        return parsed.whatsapp_number.trim();
+      }
+    }
+  } catch (e) {
+    console.error('Error reading WhatsApp number from storage', e);
+  }
+  return DEFAULT_WHATSAPP_NUMBER;
+}
+
+export async function saveWhatsAppNumber(phone: string): Promise<void> {
+  const trimmed = phone.trim() || DEFAULT_WHATSAPP_NUMBER;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(WHATSAPP_KEY, trimmed);
+    const existing = getStoreSettings();
+    existing.whatsapp_number = trimmed;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
+    window.dispatchEvent(new Event('kounoz_settings_updated'));
+  }
+
+  try {
+    await api.post('/api/settings', { whatsapp_number: trimmed });
+  } catch (err) {
+    console.warn('API save settings fallback');
+  }
+}
+
+export function getStoreSettings(): StoreSettings {
+  const defaults: StoreSettings = {
+    whatsapp_number: DEFAULT_WHATSAPP_NUMBER,
+    whatsapp_greeting: 'مرحباً، أود الاستفسار والطلب من تشكيلة كنوز الفاخرة',
+    store_phone: DEFAULT_WHATSAPP_NUMBER,
+    store_email: 'omargamil37@gmail.com',
+  };
+
+  if (typeof window === 'undefined') return defaults;
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    if (saved) {
+      return { ...defaults, ...JSON.parse(saved) };
+    }
+  } catch {}
+  return defaults;
+}
+
+export async function saveStoreSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
+  const current = getStoreSettings();
+  const updated = { ...current, ...settings };
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+    if (updated.whatsapp_number) {
+      localStorage.setItem(WHATSAPP_KEY, updated.whatsapp_number);
+    }
+    window.dispatchEvent(new Event('kounoz_settings_updated'));
+  }
+
+  try {
+    await api.post('/api/settings', updated);
+  } catch (err) {
+    console.warn('API save settings fallback');
+  }
+
+  return updated;
 }
 
 

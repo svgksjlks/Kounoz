@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Navbar } from '../../../components/Navbar';
 import { Product, Color } from '../../../types';
-import { getProductById } from '../../../lib/api';
+import { getProductById, formatWhatsAppUrl, getWhatsAppNumber } from '../../../lib/api';
 import { useCart } from '../../../context/CartContext';
+import { ProductSizeGuide } from '../../../components/ProductSizeGuide';
 import {
   ArrowRight,
   ShoppingBag,
@@ -16,6 +17,9 @@ import {
   Truck,
   RotateCcw,
   Eye,
+  MessageCircle,
+  Ruler,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -48,9 +52,18 @@ export default function ProductDetailPage() {
         if (data.colors && data.colors.length > 0) {
           setSelectedColor(data.colors[0]);
         }
+        if (data.sizes && data.sizes.length > 0) {
+          setSelectedSize(data.sizes[0]);
+        }
       }
     }
     loadProduct();
+
+    const handleUpdate = () => {
+      loadProduct();
+    };
+    window.addEventListener('kounoz_products_updated', handleUpdate);
+    return () => window.removeEventListener('kounoz_products_updated', handleUpdate);
   }, [id]);
 
   if (!product) {
@@ -84,6 +97,24 @@ export default function ProductDetailPage() {
     setTimeout(() => setAddedToast(false), 3000);
   };
 
+  const handleWhatsAppOrder = () => {
+    const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const colorText = selectedColor?.name ? selectedColor.name : 'اللون المعروض';
+    const message = `السلام عليكم ورحمة الله،
+أود طلب القطعة الفاخرة التالية من متجر كنوز:
+🏷️ القطعة: ${product.name}
+💰 السعر: ${product.price} ج.م
+📐 المقاس المطلوب: ${selectedSize}
+🎨 اللون: ${colorText}
+📦 الكمية: ${quantity}
+🔗 رابط القطعة: ${pageUrl}
+
+يرجى تأكيد توفر الطلب وبيانات الشحن والتوصيل. شكراً!`;
+
+    const url = formatWhatsAppUrl(getWhatsAppNumber(), message);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-main" dir="rtl">
       <Navbar />
@@ -111,9 +142,10 @@ export default function ProductDetailPage() {
                 className="object-cover transition-all duration-300"
                 sizes="(max-width: 1024px) 100vw, 60vw"
               />
-              <div className="absolute bottom-3 right-3 bg-noir/80 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-md flex items-center gap-1.5 shadow-sm">
-                <Eye size={13} className="text-accent" />
-                <span>{shapeLabels[activeImageIndex] || `شكل ${activeImageIndex + 1}`}</span>
+              <div className="absolute bottom-4 right-4 bg-[#141416]/90 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-2xl border border-white/20 ring-1 ring-black/40">
+                <div className="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse flex-shrink-0" />
+                <Eye size={14} className="text-[#C5A059] flex-shrink-0" />
+                <span className="text-white font-bold tracking-wide drop-shadow-sm">{shapeLabels[activeImageIndex] || `شكل ${activeImageIndex + 1}`}</span>
               </div>
             </div>
 
@@ -121,7 +153,7 @@ export default function ProductDetailPage() {
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between text-xs text-muted">
                 <span className="font-bold text-noir">أشكال وزوايا القطعة (4 أشكال بنقرة واحدة):</span>
-                <span className="text-[11px] text-accent font-medium">اضغط لعرض أي شكل في الصورة الرئيسية</span>
+                <span className="text-[11px] text-accent font-semibold">اضغط لعرض أي شكل في الصورة الرئيسية</span>
               </div>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -132,10 +164,10 @@ export default function ProductDetailPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.96 }}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative h-28 rounded-md overflow-hidden cursor-pointer border flex flex-col justify-end p-2 transition-all ${
+                    className={`relative h-28 rounded-md overflow-hidden cursor-pointer border flex flex-col justify-end p-2.5 transition-all ${
                       activeImageIndex === idx
                         ? 'border-accent ring-2 ring-accent ring-offset-2 shadow-md scale-102'
-                        : 'border-border-subtle hover:border-noir opacity-75 hover:opacity-100'
+                        : 'border-border-subtle hover:border-noir opacity-80 hover:opacity-100'
                     }`}
                   >
                     <Image
@@ -144,8 +176,8 @@ export default function ProductDetailPage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-noir/80 via-transparent to-transparent" />
-                    <span className="relative z-10 text-white text-[11px] font-bold text-right leading-tight">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <span className="relative z-10 text-white text-xs font-bold text-right leading-tight drop-shadow-md">
                       {['1. أمامي', '2. خلفي', '3. جانبي', '4. النسيج'][idx]}
                     </span>
                   </motion.button>
@@ -179,11 +211,11 @@ export default function ProductDetailPage() {
 
               <div className="flex items-baseline gap-3 mt-4">
                 <span className="text-2xl font-extrabold text-noir">
-                  {product.price} ر.س
+                  {product.price} ج.م
                 </span>
                 {product.original_price && (
                   <span className="text-muted line-through text-sm font-normal">
-                    {product.original_price} ر.س
+                    {product.original_price} ج.م
                   </span>
                 )}
               </div>
@@ -242,19 +274,21 @@ export default function ProductDetailPage() {
 
             {/* Size Selector with Clean Subtle Borders */}
             <div className="space-y-3">
-              <div className="flex justify-between text-xs">
+              <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-noir">
-                  المقاس (بالإنش):
+                  المقاس المطلوب:
                 </span>
-                <span className="text-muted underline cursor-pointer hover:text-noir transition-smooth">جدول المقاسات</span>
+                <span className="text-xs font-mono font-bold text-[#AD8A55] bg-surface px-2 py-0.5 rounded border border-border-subtle">
+                  المحدد: {selectedSize}
+                </span>
               </div>
-              <div className="grid grid-cols-5 gap-2">
-                {['52L', '54L', '56L', '58L', '60L'].map((size) => (
+              <div className="flex flex-wrap gap-2">
+                {(product.sizes && product.sizes.length > 0 ? product.sizes : ['52L', '54L', '56L', '58L', '60L']).map((size) => (
                   <motion.button
                     key={size}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedSize(size)}
-                    className={`py-2.5 text-xs font-semibold rounded-md border transition-smooth ${
+                    className={`py-2 px-3.5 text-xs font-semibold rounded-md border transition-smooth ${
                       selectedSize === size
                         ? 'bg-noir text-white border-noir shadow-sm'
                         : 'border-border-subtle text-muted hover:text-noir hover:border-noir hover:bg-surface'
@@ -265,6 +299,14 @@ export default function ProductDetailPage() {
                 ))}
               </div>
             </div>
+
+            {/* Smart Size Guide and Recommendation Tool based on Height and Weight */}
+            <ProductSizeGuide
+              product={product}
+              selectedSize={selectedSize}
+              onSelectSize={(size) => setSelectedSize(size)}
+              defaultOpen={false}
+            />
 
             {/* Quantity and Add to Bag */}
             <div className="space-y-4 pt-3">
@@ -301,6 +343,17 @@ export default function ProductDetailPage() {
                   إضافة لحقيبة المشتريات
                 </motion.button>
               </div>
+
+              {/* Direct WhatsApp Order Button */}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleWhatsAppOrder}
+                className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
+              >
+                <MessageCircle size={16} className="fill-current" />
+                <span>طلب فوري مباشر عبر واتساب</span>
+              </motion.button>
 
               <AnimatePresence>
                 {addedToast && (

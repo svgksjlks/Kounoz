@@ -8,6 +8,7 @@ const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const cartRouter = require('./routes/cart');
 const uploadRouter = require('./routes/upload');
+const settingsRouter = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,6 +33,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/auth',     authRouter);
 app.use('/api/cart',     cartRouter);
 app.use('/api/upload',   uploadRouter);
+app.use('/api/settings', settingsRouter);
 
 // ── 404 handler ─────────────────────────────────────────────
 app.use((req, res) => {
