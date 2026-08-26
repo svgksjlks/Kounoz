@@ -110,10 +110,10 @@ export default function AdminPage() {
     stock_quantity: '15',
     is_new: true,
     // 4 Shapes / Angles:
-    shape1: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=800&q=80', // الأمامي
-    shape2: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80', // الخلفي
-    shape3: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80', // الجانبي
-    shape4: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80', // النسيج
+    shape1: '/products/1/1.png', // الأمامي
+    shape2: '/products/1/2.png', // الخلفي
+    shape3: '/products/1/3.png', // الجانبي
+    shape4: '/products/1/4.png', // النسيج
     colors: [
       { name: 'أبيض لؤلؤي', hex: '#FAF9F6' },
       { name: 'سكري هادئ', hex: '#EDE5D8' },
@@ -380,10 +380,10 @@ export default function AdminPage() {
       in_stock: product.in_stock,
       stock_quantity: String(product.stock_quantity ?? (product.in_stock ? 15 : 0)),
       is_new: product.is_new,
-      shape1: shapes[0] || product.image_url,
-      shape2: shapes[1] || 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80',
-      shape3: shapes[2] || 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80',
-      shape4: shapes[3] || 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80',
+      shape1: shapes[0] || product.image_url || '/products/1/1.png',
+      shape2: shapes[1] || '/products/1/2.png',
+      shape3: shapes[2] || '/products/1/3.png',
+      shape4: shapes[3] || '/products/1/4.png',
       colors: product.colors && product.colors.length > 0 ? product.colors : [
         { name: 'أبيض لؤلؤي', hex: '#FAF9F6' },
         { name: 'سكري هادئ', hex: '#EDE5D8' },

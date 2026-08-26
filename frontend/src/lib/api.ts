@@ -232,13 +232,13 @@ export async function createProduct(productData: Partial<Product>): Promise<Prod
     description: productData.description || 'جلابية عربية فاخرة مصنوعة من أرقى الخامات الطبيعية.',
     material: productData.material || 'قطن مصري طبيعي 100%',
     care_instructions: productData.care_instructions || 'غسيل يدوي أو تنظيف جاف',
-    image_url: productData.image_url || images[0] || 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=800&q=80',
-    secondary_image_url: productData.secondary_image_url || images[1] || null,
+    image_url: productData.image_url || images[0] || '/products/1/1.png',
+    secondary_image_url: productData.secondary_image_url || images[1] || '/products/1/2.png',
     images: images.length > 0 ? images : [
-      productData.image_url || 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80'
+      productData.image_url || '/products/1/1.png',
+      '/products/1/2.png',
+      '/products/1/3.png',
+      '/products/1/4.png'
     ],
     is_new: productData.is_new !== undefined ? productData.is_new : true,
     tag: productData.tag || 'جديد كنوز',
@@ -602,10 +602,10 @@ const HERO_IMAGES_KEY = 'kounoz_hero_images';
 const HERO_BADGE_KEY  = 'kounoz_hero_badge';
 
 const DEFAULT_HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=1000&q=85',
-  '',
-  '',
-  '',
+  '/products/1/1.png',
+  '/products/1/2.png',
+  '/products/1/3.png',
+  '/products/1/4.png',
 ];
 
 export function getHeroImages(): string[] {
@@ -614,7 +614,9 @@ export function getHeroImages(): string[] {
     const saved = localStorage.getItem(HERO_IMAGES_KEY);
     if (saved) {
       const arr = JSON.parse(saved);
-      if (Array.isArray(arr) && arr.length > 0) return arr;
+      if (Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'string' && !arr[0].includes('unsplash')) {
+        return arr;
+      }
     }
   } catch {}
   return DEFAULT_HERO_IMAGES;
