@@ -143,6 +143,7 @@ export default function AdminPage() {
 
   // Upload States (for products)
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+  const [uploadingColorIdx, setUploadingColorIdx] = useState<number | null>(null);
   const [isBatchUploading, setIsBatchUploading] = useState(false);
   const [showUrlInputs, setShowUrlInputs] = useState<Record<number, boolean>>({});
 
@@ -167,6 +168,21 @@ export default function AdminPage() {
       next[index] = { ...next[index], ...updated };
       return { ...prev, colors: next };
     });
+  };
+
+  const handleColorImageUpload = async (cIdx: number, file: File) => {
+    if (!file) return;
+    setUploadingColorIdx(cIdx);
+    try {
+      const uploadedUrl = await uploadImage(file);
+      updateColor(cIdx, { image_url: uploadedUrl });
+      showToast(`تم رفع صورة لون "${formData.colors[cIdx]?.name || ''}" بنجاح`);
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء رفع صورة اللون');
+    } finally {
+      setUploadingColorIdx(null);
+    }
   };
 
   // Size Handlers
@@ -1433,47 +1449,127 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* List of active colors */}
-                      <div className="space-y-2 pt-2 border-t border-border-subtle">
+                      {/* List of active colors with individual image support */}
+                      <div className="space-y-3 pt-2 border-t border-border-subtle">
                         {formData.colors.map((color, cIdx) => (
-                          <div key={cIdx} className="flex items-center gap-2 bg-card p-2 rounded-md border border-border-subtle">
-                            {/* Color preview & picker */}
-                            <div className="relative flex items-center">
+                          <div key={cIdx} className="bg-card p-3 rounded-lg border border-border-subtle space-y-2.5 shadow-xs">
+                            {/* Color Header: Swatch + Name + Hex + Delete */}
+                            <div className="flex items-center gap-2">
+                              {/* Color preview & picker */}
+                              <div className="relative flex items-center">
+                                <input
+                                  type="color"
+                                  value={color.hex}
+                                  onChange={(e) => updateColor(cIdx, { hex: e.target.value })}
+                                  className="w-7 h-7 rounded-full border border-border-subtle cursor-pointer p-0 bg-transparent"
+                                  title="اختر اللون"
+                                />
+                              </div>
+
+                              {/* Color name input */}
                               <input
-                                type="color"
+                                type="text"
+                                value={color.name}
+                                onChange={(e) => updateColor(cIdx, { name: e.target.value })}
+                                placeholder="اسم اللون (مثال: أبيض لؤلؤي)"
+                                className="flex-1 px-2.5 py-1.5 bg-surface text-noir text-xs rounded border border-border-subtle focus:border-noir focus:outline-none font-semibold"
+                              />
+
+                              {/* Hex input */}
+                              <input
+                                type="text"
                                 value={color.hex}
                                 onChange={(e) => updateColor(cIdx, { hex: e.target.value })}
-                                className="w-7 h-7 rounded-full border border-border-subtle cursor-pointer p-0 bg-transparent"
-                                title="اختر اللون"
+                                className="w-20 px-2 py-1.5 bg-surface text-noir text-[11px] font-mono rounded border border-border-subtle focus:border-noir focus:outline-none text-center"
                               />
+
+                              {/* Remove button */}
+                              <button
+                                type="button"
+                                onClick={() => removeColor(cIdx)}
+                                className="p-1.5 rounded hover:bg-red-50 text-muted hover:text-red-600 transition-smooth"
+                                title="حذف هذا اللون"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </div>
 
-                            {/* Color name input */}
-                            <input
-                              type="text"
-                              value={color.name}
-                              onChange={(e) => updateColor(cIdx, { name: e.target.value })}
-                              placeholder="اسم اللون (مثال: أبيض لؤلؤي)"
-                              className="flex-1 px-2.5 py-1.5 bg-surface text-noir text-xs rounded border border-border-subtle focus:border-noir focus:outline-none"
-                            />
+                            {/* Color Image Row: Upload Photo or Enter URL */}
+                            <div className="flex items-center gap-2.5 pt-2 border-t border-dashed border-border-subtle bg-surface/60 p-2 rounded-md">
+                              {/* Mini Image Preview */}
+                              {color.image_url ? (
+                                <div className="relative w-12 h-12 rounded-md overflow-hidden border border-border-subtle flex-shrink-0 group bg-main">
+                                  <Image
+                                    src={color.image_url}
+                                    alt={color.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateColor(cIdx, { image_url: '' })}
+                                    className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="إزالة صورة هذا اللون"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-md border border-dashed border-border-subtle flex items-center justify-center flex-shrink-0 text-muted bg-card">
+                                  <ImageIcon size={18} />
+                                </div>
+                              )}
 
-                            {/* Hex input */}
-                            <input
-                              type="text"
-                              value={color.hex}
-                              onChange={(e) => updateColor(cIdx, { hex: e.target.value })}
-                              className="w-20 px-2 py-1.5 bg-surface text-noir text-[11px] font-mono rounded border border-border-subtle focus:border-noir focus:outline-none text-center"
-                            />
+                              {/* Upload Button + URL Input */}
+                              <div className="flex-1 space-y-1 text-right">
+                                <div className="flex items-center gap-2">
+                                  <label
+                                    className={`cursor-pointer px-2.5 py-1 text-[11px] font-bold rounded border transition-smooth inline-flex items-center gap-1.5 ${
+                                      uploadingColorIdx === cIdx
+                                        ? 'bg-noir text-white opacity-80'
+                                        : 'bg-card hover:bg-noir hover:text-white border-border-subtle text-noir'
+                                    }`}
+                                  >
+                                    {uploadingColorIdx === cIdx ? (
+                                      <>
+                                        <Loader2 size={12} className="animate-spin" />
+                                        <span>جاري رفع صورة {color.name}...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload size={12} />
+                                        <span>{color.image_url ? 'تغيير صورة هذا اللون' : 'رفع صورة لهذا اللون'}</span>
+                                      </>
+                                    )}
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      disabled={uploadingColorIdx === cIdx}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleColorImageUpload(cIdx, file);
+                                      }}
+                                    />
+                                  </label>
 
-                            {/* Remove button */}
-                            <button
-                              type="button"
-                              onClick={() => removeColor(cIdx)}
-                              className="p-1.5 rounded hover:bg-red-50 text-muted hover:text-red-600 transition-smooth"
-                              title="حذف هذا اللون"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                                  {color.image_url && (
+                                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
+                                      <Check size={11} />
+                                      صورة اللون مفعلة
+                                    </span>
+                                  )}
+                                </div>
+
+                                <input
+                                  type="text"
+                                  value={color.image_url || ''}
+                                  onChange={(e) => updateColor(cIdx, { image_url: e.target.value })}
+                                  placeholder="أو الصق رابط صورة اللون (URL)..."
+                                  className="w-full px-2 py-1 bg-card text-noir text-[10px] rounded border border-border-subtle focus:border-noir focus:outline-none"
+                                />
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>

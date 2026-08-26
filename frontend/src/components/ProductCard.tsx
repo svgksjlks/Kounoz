@@ -16,18 +16,31 @@ interface ProductCardProps {
 export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const { addItem } = useCart();
   
-  // Extract up to 4 shape images
-  const allShapes = (product.images && product.images.length > 0)
-    ? product.images
-    : [product.image_url, product.secondary_image_url].filter(Boolean) as string[];
-
+  const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0] || null);
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || '58L');
   const [isHovered, setIsHovered] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
-  const currentDisplayImage = allShapes[activeImageIndex] || product.image_url;
+  // Dynamic shapes based on selected color
+  const colorShapes = selectedColor?.images && selectedColor.images.length > 0
+    ? selectedColor.images
+    : selectedColor?.image_url
+    ? [
+        selectedColor.image_url,
+        ...(product.images || [product.image_url, product.secondary_image_url]).filter(
+          (img): img is string => Boolean(img) && img !== selectedColor.image_url
+        ),
+      ]
+    : null;
+
+  const allShapes = colorShapes || (
+    (product.images && product.images.length > 0)
+      ? product.images
+      : [product.image_url, product.secondary_image_url].filter(Boolean) as string[]
+  );
+
+  const currentDisplayImage = allShapes[activeImageIndex] || allShapes[0] || product.image_url;
 
   const discountPercent = product.original_price
     ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
@@ -201,7 +214,12 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               {product.colors.map((c) => (
                 <button
                   key={c.name}
-                  onClick={() => setSelectedColor(c)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedColor(c);
+                    setActiveImageIndex(0);
+                  }}
                   className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-smooth ${
                     selectedColor?.name === c.name
                       ? 'ring-1 sm:ring-2 ring-noir ring-offset-1 scale-110'

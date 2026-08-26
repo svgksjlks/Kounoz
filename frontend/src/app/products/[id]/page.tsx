@@ -77,11 +77,25 @@ export default function ProductDetailPage() {
     );
   }
 
-  const allShapes = (product.images && product.images.length > 0)
-    ? product.images
-    : [product.image_url, product.secondary_image_url].filter(Boolean) as string[];
+  // Dynamic shapes based on selected color
+  const colorShapes = selectedColor?.images && selectedColor.images.length > 0
+    ? selectedColor.images
+    : selectedColor?.image_url
+    ? [
+        selectedColor.image_url,
+        ...(product.images || [product.image_url, product.secondary_image_url]).filter(
+          (img): img is string => Boolean(img) && img !== selectedColor.image_url
+        ),
+      ]
+    : null;
 
-  const currentMainPhoto = allShapes[activeImageIndex] || product.image_url;
+  const allShapes = colorShapes || (
+    (product.images && product.images.length > 0)
+      ? product.images
+      : [product.image_url, product.secondary_image_url].filter(Boolean) as string[]
+  );
+
+  const currentMainPhoto = allShapes[activeImageIndex] || allShapes[0] || product.image_url;
 
   const handleAddToCart = () => {
     addItem({
@@ -253,7 +267,10 @@ export default function ProductDetailPage() {
                     <motion.button
                       key={c.name}
                       whileTap={{ scale: 0.85 }}
-                      onClick={() => setSelectedColor(c)}
+                      onClick={() => {
+                        setSelectedColor(c);
+                        setActiveImageIndex(0);
+                      }}
                       className={`w-7 h-7 rounded-full transition-smooth flex items-center justify-center ${
                         selectedColor?.name === c.name
                           ? 'ring-2 ring-noir ring-offset-2 scale-110 shadow-sm'

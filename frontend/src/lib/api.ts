@@ -46,9 +46,9 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L', '60L'],
     colors: [
-      { name: 'أبيض لؤلؤي', hex: '#FAF9F6' },
-      { name: 'سكري هادئ', hex: '#EDE5D8' },
-      { name: 'كحلي ملكي', hex: '#1C2833' },
+      { name: 'أبيض لؤلؤي', hex: '#FAF9F6', image_url: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=800&q=80' },
+      { name: 'سكري هادئ', hex: '#EDE5D8', image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80' },
+      { name: 'كحلي ملكي', hex: '#1C2833', image_url: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -74,9 +74,9 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['54L', '56L', '58L', '60L'],
     colors: [
-      { name: 'رمادي فحمي', hex: '#2C3E50' },
-      { name: 'بني عسلي', hex: '#6B4226' },
-      { name: 'زيتي ملكي', hex: '#3D5A45' },
+      { name: 'رمادي فحمي', hex: '#2C3E50', image_url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80' },
+      { name: 'بني عسلي', hex: '#6B4226', image_url: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80' },
+      { name: 'زيتي ملكي', hex: '#3D5A45', image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -102,9 +102,9 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['27', '28', '29', '30'],
     colors: [
-      { name: 'أسود ملكي', hex: '#111111' },
-      { name: 'بني شوكولاتة', hex: '#4A2E18' },
-      { name: 'بيج صحراوي', hex: '#D2B48C' },
+      { name: 'أسود ملكي', hex: '#111111', image_url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80' },
+      { name: 'بني شوكولاتة', hex: '#4A2E18', image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80' },
+      { name: 'بيج صحراوي', hex: '#D2B48C', image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -130,9 +130,9 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L'],
     colors: [
-      { name: 'كتان خام طبيعي', hex: '#DED4C2' },
-      { name: 'أزرق كحلي', hex: '#1C2833' },
-      { name: 'زيتي هادئ', hex: '#8FAF8C' },
+      { name: 'كتان خام طبيعي', hex: '#DED4C2', image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80' },
+      { name: 'أزرق كحلي', hex: '#1C2833', image_url: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80' },
+      { name: 'زيتي هادئ', hex: '#8FAF8C', image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -158,8 +158,8 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['54L', '56L', '58L', '60L', '62L'],
     colors: [
-      { name: 'أبيض ناصع', hex: '#FFFFFF' },
-      { name: 'سكري فاتح', hex: '#F5EFE6' },
+      { name: 'أبيض ناصع', hex: '#FFFFFF', image_url: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=800&q=80' },
+      { name: 'سكري فاتح', hex: '#F5EFE6', image_url: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -185,8 +185,8 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['مقاس موحد (One Size)'],
     colors: [
-      { name: 'بيج كلاسيكي', hex: '#D7C4A5' },
-      { name: 'عنابي دافئ', hex: '#78281F' },
+      { name: 'بيج كلاسيكي', hex: '#D7C4A5', image_url: 'https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&w=800&q=80' },
+      { name: 'عنابي دافئ', hex: '#78281F', image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -212,9 +212,9 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L'],
     colors: [
-      { name: 'كحلي ليلي', hex: '#0B132B' },
-      { name: 'خمري عميق', hex: '#4A1521' },
-      { name: 'أخضر زمردي', hex: '#1B4D3E' },
+      { name: 'كحلي ليلي', hex: '#0B132B', image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=80' },
+      { name: 'خمري عميق', hex: '#4A1521', image_url: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=800&q=80' },
+      { name: 'أخضر زمردي', hex: '#1B4D3E', image_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -240,8 +240,8 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['S', 'M', 'L', 'XL'],
     colors: [
-      { name: 'رصاصي / كحلي', hex: '#4B6584' },
-      { name: 'جملي / بني', hex: '#A5693F' },
+      { name: 'رصاصي / كحلي', hex: '#4B6584', image_url: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80' },
+      { name: 'جملي / بني', hex: '#A5693F', image_url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -267,8 +267,8 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['55', '58', '60'],
     colors: [
-      { name: 'أحمر تراثي', hex: '#922B21' },
-      { name: 'أبيض سادة', hex: '#FFFFFF' },
+      { name: 'أحمر تراثي', hex: '#922B21', image_url: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=800&q=80' },
+      { name: 'أبيض سادة', hex: '#FFFFFF', image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80' },
     ],
   },
   {
@@ -294,7 +294,7 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['48', '50', '52', '54'],
     colors: [
-      { name: 'أسود وقصب مذهب', hex: '#1C1C1E' },
+      { name: 'أسود وقصب مذهب', hex: '#1C1C1E', image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80' },
     ],
   },
 ];

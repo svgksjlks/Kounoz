@@ -1,6 +1,8 @@
 export interface Color {
   name: string;
   hex: string;
+  image_url?: string;
+  images?: string[];
 }
 
 export interface Product {
