@@ -7,6 +7,7 @@ import { Eye, ShoppingBag, Check } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getColorShapes } from '../lib/api';
 
 interface ProductCardProps {
   product: Product;
@@ -22,23 +23,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [addedAnimation, setAddedAnimation] = useState(false);
 
-  // Dynamic shapes based on selected color
-  const colorShapes = selectedColor?.images && selectedColor.images.length > 0
-    ? selectedColor.images
-    : selectedColor?.image_url
-    ? [
-        selectedColor.image_url,
-        ...(product.images || [product.image_url, product.secondary_image_url]).filter(
-          (img): img is string => Boolean(img) && img !== selectedColor.image_url
-        ),
-      ]
-    : null;
-
-  const allShapes = colorShapes || (
-    (product.images && product.images.length > 0)
-      ? product.images
-      : [product.image_url, product.secondary_image_url].filter(Boolean) as string[]
-  );
+  // Guaranteed consistent 4 angles for the active selected color
+  const allShapes = getColorShapes(product, selectedColor);
 
   const currentDisplayImage = allShapes[activeImageIndex] || allShapes[0] || product.image_url;
 
@@ -70,13 +56,11 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 15 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -4 }}
-      className="group flex flex-col bg-card rounded-md sm:rounded-lg border border-border-subtle overflow-hidden transition-smooth shadow-sm hover:shadow-md relative select-none"
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="group flex flex-col bg-card rounded-md sm:rounded-lg border border-border-subtle overflow-hidden hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md relative select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -106,22 +90,22 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
           )}
         </div>
 
-        {/* 4 Shapes One-Click Interactive Bar on the Photo */}
+        {/* 5 Photos One-Click Interactive Bar on the Photo (4 Angles + Packaging) */}
         {allShapes.length > 1 && (
           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex items-center gap-1 bg-[#141416]/90 backdrop-blur-md p-1 rounded-md border border-white/20 z-20 shadow-md">
-            {allShapes.slice(0, 4).map((shapeUrl, idx) => (
+            {allShapes.slice(0, 5).map((shapeUrl, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={(e) => handleShapeClick(e, idx)}
-                title={`معاينة الزاوية ${idx + 1}`}
+                title={idx === 4 ? 'معاينة الباكدج الرسمي' : `معاينة الزاوية ${idx + 1}`}
                 className={`relative w-4 h-4 sm:w-5 sm:h-5 rounded-sm overflow-hidden border transition-all ${
                   activeImageIndex === idx
-                    ? 'border-[#C5A059] ring-2 ring-[#C5A059] scale-110 shadow-sm'
+                    ? 'border-accent ring-2 ring-accent/50 scale-110 shadow-sm'
                     : 'border-white/30 opacity-70 hover:opacity-100 hover:scale-105'
                 }`}
               >
-                <Image src={shapeUrl} alt={`زاوية ${idx + 1}`} fill className="object-cover" />
+                <Image src={shapeUrl} alt={idx === 4 ? 'الباكدج' : `زاوية ${idx + 1}`} fill className="object-cover" />
               </button>
             ))}
           </div>
@@ -140,9 +124,9 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               <button
                 type="button"
                 onClick={() => onQuickView && onQuickView(product)}
-                className="flex-1 py-2 sm:py-2.5 bg-[#141416]/95 backdrop-blur-md hover:bg-[#AD8A55] text-white text-[11px] sm:text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-lg border border-white/20"
+                className="flex-1 py-2 sm:py-2.5 bg-[#141416]/95 backdrop-blur-md hover:bg-accent text-gray-200 text-[11px] sm:text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-lg border border-white/20"
               >
-                <Eye size={13} className="text-[#C5A059]" />
+                <Eye size={13} className="text-rose-300" />
                 <span className="hidden xs:inline">معاينة سريعة</span>
               </button>
 
@@ -150,7 +134,7 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
                 whileTap={{ scale: 0.9 }}
                 onClick={handleQuickAdd}
                 className={`px-3 py-2 sm:px-3.5 sm:py-2.5 text-white rounded-lg flex items-center justify-center transition-all shadow-lg border border-white/20 ${
-                  addedAnimation ? 'bg-emerald-700' : 'bg-[#141416]/95 hover:bg-[#AD8A55]'
+                  addedAnimation ? 'bg-emerald-700' : 'bg-[#141416]/95 hover:bg-accent'
                 }`}
                 aria-label="إضافة سريعة"
               >
@@ -184,8 +168,8 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
                 onClick={() => setSelectedSize(size)}
                 className={`px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded border transition-smooth ${
                   selectedSize === size
-                    ? 'bg-noir text-white border-noir'
-                    : 'border-border-subtle text-muted hover:text-noir hover:border-noir'
+                    ? 'bg-accent text-gray-200 border-accent shadow-xs'
+                    : 'border-border-subtle text-muted hover:text-noir hover:border-accent'
                 }`}
               >
                 {size}

@@ -1,4 +1,4 @@
-# dependencies
+﻿# dependencies
 node_modules/
 frontend/node_modules/
 backend/node_modules/
@@ -34,3 +34,14 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+
+.vercel
+.env*
+
+test.log
+*.log
+Intro vidoe/
+*جلاليب*
+login google/
+*.jfif
+*.jpeg

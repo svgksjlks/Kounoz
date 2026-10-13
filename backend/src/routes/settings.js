@@ -4,10 +4,10 @@ const { pool, isDbAvailable } = require('../db');
 
 // Default in-memory settings
 let storeSettings = {
-  whatsapp_number: '01000943197',
+  whatsapp_number: '01022822123',
   whatsapp_greeting: 'مرحباً، أود الاستفسار والطلب من متجر كنوز',
-  store_phone: '01000943197',
-  store_email: 'concierge@kounoz.sa',
+  store_phone: '01022822123',
+  store_email: 'Kounozthobe@gmail.com',
 };
 
 // GET /api/settings

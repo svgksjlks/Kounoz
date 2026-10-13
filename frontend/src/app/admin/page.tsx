@@ -9,6 +9,7 @@ import {
   Trash2,
   Edit,
   Eye,
+  EyeOff,
   LogOut,
   ShoppingBag,
   Layers,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   Upload,
   Lock,
+  KeyRound,
   Loader2,
   FileUp,
   Image as ImageIcon,
@@ -31,10 +33,14 @@ import {
   Tag,
   MessageCircle,
   Phone,
+  Mail,
   ExternalLink,
   Save,
   Download,
   UploadCloud,
+  ChevronDown,
+  ChevronUp,
+  Copy,
 } from 'lucide-react';
 import { Product, CATEGORIES, Category, User, Color } from '../../types';
 import {
@@ -45,6 +51,7 @@ import {
   getLocalProducts,
   saveLocalProducts,
   loginAdmin,
+  changeAdminPassword,
   getAdminUser,
   logoutAdmin,
   isAdminEmail,
@@ -54,6 +61,14 @@ import {
   saveHeroImages,
   getHeroBadge,
   saveHeroBadge,
+  getHeroVideo,
+  saveHeroVideo,
+  uploadHeroVideo,
+  DEFAULT_HERO_VIDEO,
+  getBannerSlides,
+  saveBannerSlides,
+  uploadBannerSlide,
+  DEFAULT_BANNER_SLIDES,
   getStoreSettings,
   saveStoreSettings,
   formatWhatsAppPhone,
@@ -83,8 +98,21 @@ export default function AdminPage() {
   const [adminUser, setAdminUser] = useState<User | null>(null);
   const [showPasswordLogin, setShowPasswordLogin] = useState(false);
   const [emailInput, setEmailInput] = useState('admin@kounoz.sa');
-  const [passwordInput, setPasswordInput] = useState('admin123');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  // ── Change Password Modal State ─────────────────────────────────────────────
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [changeEmail, setChangeEmail] = useState('admin@kounoz.sa');
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmNewPasswordInput, setConfirmNewPasswordInput] = useState('');
+  const [showCurrentPass, setShowCurrentPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSuccess, setChangePasswordSuccess] = useState('');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +127,7 @@ export default function AdminPage() {
   // Form State for 1 Main Photo + 4 Shapes + Colors + Sizes + Stock Quantity
   const [formData, setFormData] = useState({
     name: '',
-    category: 'جلابيب كلاسيكية' as Category,
+    category: 'كولكشن الصيفي' as Category,
     price: '',
     original_price: '',
     material: 'قطن مصري 100% فاخر',
@@ -139,9 +167,23 @@ export default function AdminPage() {
   const [heroBadgeMaterial, setHeroBadgeMaterial] = useState('قطن مصري 100% نقي');
   const [heroSaved, setHeroSaved]                 = useState(false);
 
+  // ── Hero Banner Slider State ───────────────────────────────────────────────
+  const [bannerSlides, setBannerSlides]           = useState<string[]>(DEFAULT_BANNER_SLIDES);
+  const [uploadingBannerIdx, setUploadingBannerIdx] = useState<number | null>(null);
+  const [bannerSaved, setBannerSaved]             = useState(false);
+
+  // ── Hero Video State ────────────────────────────────────────────────────────
+  const [heroVideoUrl, setHeroVideoUrl]           = useState(DEFAULT_HERO_VIDEO);
+  const [heroVideoInput, setHeroVideoInput]       = useState('');
+  const [uploadingHeroVideo, setUploadingHeroVideo] = useState(false);
+  const [heroVideoSaved, setHeroVideoSaved]       = useState(false);
+
   // ── WhatsApp & Store Settings State ───────────────────────────────────────
-  const [whatsappNumber, setWhatsappNumber]       = useState('01000943197');
+  const [whatsappNumber, setWhatsappNumber]       = useState('01022822123');
   const [whatsappGreeting, setWhatsappGreeting]   = useState('مرحباً، أود الاستفسار والطلب من تشكيلة كنوز الفاخرة');
+  const [storePhone, setStorePhone]               = useState('01022822123');
+  const [wholesalePhone, setWholesalePhone]       = useState('01066583964');
+  const [storeEmail, setStoreEmail]               = useState('Kounozthobe@gmail.com');
   const [whatsappSaved, setWhatsappSaved]         = useState(false);
   const [isSavingWhatsapp, setIsSavingWhatsapp]   = useState(false);
 
@@ -174,19 +216,80 @@ export default function AdminPage() {
     });
   };
 
-  const handleColorImageUpload = async (cIdx: number, file: File) => {
+  const [uploadingColorSlot, setUploadingColorSlot] = useState<{ cIdx: number; slot: number } | null>(null);
+  const [expandedColorAngles, setExpandedColorAngles] = useState<Record<number, boolean>>({});
+
+  const toggleColorAngles = (cIdx: number) => {
+    setExpandedColorAngles((prev) => ({ ...prev, [cIdx]: !prev[cIdx] }));
+  };
+
+  const handleColorImageUpload = async (cIdx: number, file: File, slot: number = 0) => {
     if (!file) return;
     setUploadingColorIdx(cIdx);
+    setUploadingColorSlot({ cIdx, slot });
     try {
       const uploadedUrl = await uploadImage(file);
-      updateColor(cIdx, { image_url: uploadedUrl });
-      showToast(`تم رفع صورة لون "${formData.colors[cIdx]?.name || ''}" بنجاح`);
+      const color = formData.colors[cIdx];
+      const existingImages = color.images && color.images.length > 0
+        ? [...color.images]
+        : [color.image_url || uploadedUrl, color.image_url || uploadedUrl, color.image_url || uploadedUrl, color.image_url || uploadedUrl];
+      
+      while (existingImages.length < 4) {
+        existingImages.push(existingImages[0] || uploadedUrl);
+      }
+      existingImages[slot] = uploadedUrl;
+
+      const primaryUrl = slot === 0 ? uploadedUrl : (color.image_url || existingImages[0]);
+
+      if (slot === 0 && (!color.images || color.images.filter(Boolean).length <= 1)) {
+        updateColor(cIdx, {
+          image_url: uploadedUrl,
+          images: [uploadedUrl, uploadedUrl, uploadedUrl, uploadedUrl],
+        });
+      } else {
+        updateColor(cIdx, {
+          image_url: primaryUrl,
+          images: existingImages,
+        });
+      }
+      showToast(`تم رفع صورة الزاوية ${slot + 1} للون "${formData.colors[cIdx]?.name || ''}" بنجاح`);
     } catch (err) {
       console.error(err);
       alert('حدث خطأ أثناء رفع صورة اللون');
     } finally {
       setUploadingColorIdx(null);
+      setUploadingColorSlot(null);
     }
+  };
+
+  const updateColorAngle = (cIdx: number, slot: number, url: string) => {
+    const color = formData.colors[cIdx];
+    const existingImages = color.images && color.images.length > 0
+      ? [...color.images]
+      : [color.image_url || url, color.image_url || url, color.image_url || url, color.image_url || url];
+    while (existingImages.length < 4) {
+      existingImages.push(existingImages[0] || url);
+    }
+    existingImages[slot] = url;
+    const primaryUrl = slot === 0 ? url : (color.image_url || existingImages[0]);
+    updateColor(cIdx, {
+      image_url: primaryUrl,
+      images: existingImages,
+    });
+  };
+
+  const applyColorImageToAllAngles = (cIdx: number) => {
+    const color = formData.colors[cIdx];
+    const img = color.image_url || color.images?.[0];
+    if (!img) {
+      alert('يرجى تحديد أو رفع صورة للون أولاً');
+      return;
+    }
+    updateColor(cIdx, {
+      image_url: img,
+      images: [img, img, img, img],
+    });
+    showToast(`تم تعيين نفس صورة اللون "${color.name}" لكافة الزوايا الأربعة بنجاح`);
   };
 
   // Size Handlers
@@ -270,10 +373,19 @@ export default function AdminPage() {
     if (imgs?.length) setHeroImages(imgs);
     const badge = getHeroBadge();
     if (badge) { setHeroBadgeName(badge.name); setHeroBadgeMaterial(badge.material); }
+    // Load hero video
+    const vid = getHeroVideo();
+    if (vid) setHeroVideoUrl(vid);
+    // Load hero banner slides
+    const bSlides = getBannerSlides();
+    if (bSlides?.length) setBannerSlides(bSlides);
     // Load store settings & WhatsApp number
     const settings = getStoreSettings();
     if (settings.whatsapp_number) setWhatsappNumber(settings.whatsapp_number);
     if (settings.whatsapp_greeting) setWhatsappGreeting(settings.whatsapp_greeting);
+    if (settings.store_phone) setStorePhone(settings.store_phone);
+    if (settings.wholesale_phone) setWholesalePhone(settings.wholesale_phone);
+    if (settings.store_email) setStoreEmail(settings.store_email);
   }, [session]);
 
   const handleSaveWhatsapp = async () => {
@@ -286,10 +398,13 @@ export default function AdminPage() {
       await saveStoreSettings({
         whatsapp_number: whatsappNumber.trim(),
         whatsapp_greeting: whatsappGreeting.trim(),
+        store_phone: storePhone.trim() || whatsappNumber.trim(),
+        wholesale_phone: wholesalePhone.trim() || '01066583964',
+        store_email: storeEmail.trim() || 'Kounozthobe@gmail.com',
       });
       setWhatsappSaved(true);
       setTimeout(() => setWhatsappSaved(false), 3000);
-      showToast('تم حفظ رقم الواتساب وتحديث المتجر بنجاح ✅');
+      showToast('تم حفظ أرقام وبيانات التواصل وتحديث كامل المتجر بنجاح ✅');
     } catch (err) {
       alert('حدث خطأ أثناء حفظ الإعدادات');
     } finally {
@@ -312,12 +427,48 @@ export default function AdminPage() {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    if (!passwordInput.trim()) {
+      setLoginError('يرجى إدخال كلمة المرور');
+      return;
+    }
     const user = loginAdmin(emailInput, passwordInput);
     if (user) {
       setAdminUser(user);
       loadProductList();
     } else {
-      setLoginError('بيانات الدخول غير صحيحة (كلمة المرور الافتراضية: admin123)');
+      setLoginError('كلمة المرور غير صحيحة، أو هذا البريد غير مصرح له كمدير');
+    }
+  };
+
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordError('');
+    setChangePasswordSuccess('');
+
+    const cleanEmail = changeEmail.trim().toLowerCase();
+    if (!cleanEmail || !currentPasswordInput || !newPasswordInput || !confirmNewPasswordInput) {
+      setChangePasswordError('يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
+
+    if (newPasswordInput !== confirmNewPasswordInput) {
+      setChangePasswordError('كلمة المرور الجديدة وتأكيدها غير متطابقين');
+      return;
+    }
+
+    const res = changeAdminPassword(cleanEmail, currentPasswordInput, newPasswordInput);
+    if (res.success) {
+      setChangePasswordSuccess('تم تغيير كلمة مرور الأدمن بنجاح ✅');
+      setCurrentPasswordInput('');
+      setNewPasswordInput('');
+      setConfirmNewPasswordInput('');
+      showToast('تم تحديث وحفظ كلمة مرور الإدارة بنجاح ✅');
+      setTimeout(() => {
+        setIsChangePasswordOpen(false);
+        setChangePasswordSuccess('');
+      }, 1500);
+    } else {
+      setChangePasswordError(res.error || 'حدث خطأ أثناء تغيير كلمة المرور');
     }
   };
 
@@ -333,7 +484,7 @@ export default function AdminPage() {
     setEditingProductId(null);
     setFormData({
       name: '',
-      category: 'جلابيب كلاسيكية',
+      category: 'كولكشن الصيفي',
       price: '',
       original_price: '',
       material: 'قطن مصري 100% فاخر',
@@ -370,7 +521,7 @@ export default function AdminPage() {
 
     setFormData({
       name: product.name,
-      category: (product.category as Category) || 'جلابيب كلاسيكية',
+      category: (product.category as Category) || 'كولكشن الصيفي',
       price: String(product.price),
       original_price: product.original_price ? String(product.original_price) : '',
       material: product.material || '',
@@ -464,6 +615,23 @@ export default function AdminPage() {
     const stockNum = Number(formData.stock_quantity) || 0;
     const isAvailable = formData.in_stock && stockNum > 0;
 
+    const sanitizedColors = formData.colors.map((c) => {
+      const primary = (c.image_url || c.images?.[0] || '').trim();
+      let colorImages = c.images && c.images.length > 0 ? [...c.images] : [];
+      if (colorImages.length === 0 && primary) {
+        colorImages = [primary, primary, primary, primary];
+      } else if (colorImages.length > 0) {
+        while (colorImages.length < 4) {
+          colorImages.push(colorImages[0] || primary);
+        }
+      }
+      return {
+        ...c,
+        image_url: primary || undefined,
+        images: colorImages.length > 0 ? colorImages : undefined,
+      };
+    });
+
     const productPayload: Partial<Product> = {
       name: formData.name.trim(),
       category: formData.category,
@@ -479,7 +647,7 @@ export default function AdminPage() {
       image_url: shapesArray[0],
       secondary_image_url: shapesArray[1] || null,
       images: shapesArray,
-      colors: formData.colors.length > 0 ? formData.colors : [
+      colors: sanitizedColors.length > 0 ? sanitizedColors : [
         { name: 'ذهبي كنوز', hex: '#AD8A55' }
       ],
       sizes: formData.sizes.length > 0 ? formData.sizes : ['52L', '54L', '56L', '58L', '60L'],
@@ -503,8 +671,45 @@ export default function AdminPage() {
   };
 
   const filteredProducts = products.filter((p) => {
-    const matchesCategory = selectedFilterCategory === 'جميع القطع' || p.category === selectedFilterCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.category.includes(searchQuery);
+    let matchesCategory = true;
+    if (selectedFilterCategory === 'تخفيضات') {
+      matchesCategory = Boolean(
+        p.category === 'تخفيضات' ||
+        (p.original_price && p.original_price > p.price) ||
+        (p.tag && (p.tag.includes('خصم') || p.tag.includes('تخفيض') || p.tag.includes('وفر')))
+      );
+    } else if (selectedFilterCategory === 'وصل حديثاً') {
+      matchesCategory = Boolean(p.is_new || (p.tag && p.tag.includes('جديد')) || p.category === 'وصل حديثاً');
+    } else if (selectedFilterCategory === 'كولكشن الشتوي') {
+      matchesCategory = Boolean(
+        p.category === 'كولكشن الشتوي' ||
+        p.category === 'أثواب ملكية' ||
+        p.name.includes('شتوي') ||
+        p.description.includes('شتوي') ||
+        p.material.includes('صوف') ||
+        p.material.includes('جوخ') ||
+        (p.tag && p.tag.includes('شتوي'))
+      );
+    } else if (selectedFilterCategory === 'كولكشن الصيفي') {
+      matchesCategory = Boolean(
+        p.category === 'كولكشن الصيفي' ||
+        p.category === 'جلابيب كلاسيكية' ||
+        p.name.includes('صيفي') ||
+        p.description.includes('صيفي') ||
+        p.material.includes('قطن') ||
+        p.material.includes('كتان') ||
+        (p.tag && p.tag.includes('صيفي'))
+      );
+    } else if (selectedFilterCategory !== 'جميع القطع') {
+      matchesCategory = p.category === selectedFilterCategory;
+    }
+
+    const matchesSearch = Boolean(
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.includes(searchQuery) ||
+      (p.tag && p.tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     return matchesCategory && matchesSearch;
   });
 
@@ -523,7 +728,7 @@ export default function AdminPage() {
   }
 
   // ── 2. UNAUTHORIZED GOOGLE USER ──────────────────────────────────────────────
-  if (session?.user?.email && !isAdminEmail(session.user.email)) {
+  if (session?.user?.email && !isAdminEmail(session.user.email) && !adminUser) {
     return (
       <div className="min-h-screen bg-main flex items-center justify-center p-6" dir="rtl">
         <div className="w-full max-w-md bg-card p-8 rounded-xl border border-red-200 shadow-xl space-y-6 text-center">
@@ -533,16 +738,31 @@ export default function AdminPage() {
           <h2 className="font-serif text-2xl font-bold text-noir">غير مصرح بالدخول</h2>
           <p className="text-xs text-muted leading-relaxed">
             حسابك (<span className="font-bold text-noir">{session.user?.email}</span>) غير مضاف في قائمة المديرين المعتمدين.
-            فقط الحسابات المعتمدة يمكنها الوصول للوحة التحكم.
           </p>
-          <button
-            onClick={() => signOut({ callbackUrl: '/admin' })}
-            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2"
-          >
-            <LogOut size={14} />
-            الخروج والمحاولة بحساب آخر
-          </button>
-          <Link href="/" className="text-xs text-muted hover:text-noir transition-smooth inline-flex items-center gap-1 justify-center">
+          <div className="space-y-3 pt-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await signOut({ redirect: false });
+                setAdminUser(null);
+                setPasswordInput('');
+                setLoginError('');
+              }}
+              className="w-full py-3 bg-accent hover:bg-noir text-white text-xs font-bold rounded-md transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Lock size={14} />
+              الدخول كمدير بالبريد وكلمة المرور
+            </button>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/admin' })}
+              className="w-full py-2.5 bg-surface hover:bg-card text-muted hover:text-noir text-xs font-semibold rounded-md border border-border-subtle transition-all flex items-center justify-center gap-2"
+            >
+              <LogOut size={14} />
+              الخروج من حساب Google
+            </button>
+          </div>
+          <Link href="/" className="text-xs text-muted hover:text-noir transition-smooth inline-flex items-center gap-1 justify-center pt-2">
             <span>العودة لمتجر كنوز</span>
             <ArrowRight size={13} />
           </Link>
@@ -557,11 +777,11 @@ export default function AdminPage() {
       <div className="min-h-screen bg-main flex items-center justify-center p-6" dir="rtl">
         <div className="w-full max-w-md bg-card p-8 rounded-xl border border-border-subtle shadow-xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="relative w-16 h-16 mx-auto mb-2">
-              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" />
+            <div className="relative w-16 h-16 mx-auto mb-2 rounded-full bg-[#FAF6EE] p-2 border border-[#D4AF37]/50 shadow-md flex items-center justify-center overflow-hidden">
+              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain p-1" />
             </div>
             <h1 className="font-serif text-3xl font-bold text-noir">لوحة تحكم إدارة كنوز</h1>
-            <p className="text-xs text-muted">تسجيل الدخول لإدارة المنتجات والصور</p>
+            <p className="text-xs text-muted">تسجيل الدخول لإدارة المنتجات، الصور، والبانرات</p>
           </div>
 
           {loginError && (
@@ -570,65 +790,64 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Google Sign In Button */}
-          <button
-            onClick={() => signIn('google', { callbackUrl: `${window.location.origin}/admin` })}
-            className="w-full py-3.5 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold rounded-xl border-2 border-gray-200 hover:border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-3"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            ادخل بـ Google
-          </button>
-
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <div className="flex-1 h-px bg-border-subtle"></div>
-            <span>أو</span>
-            <div className="flex-1 h-px bg-border-subtle"></div>
-          </div>
-
-          {/* Toggle Password Login */}
-          {!showPasswordLogin ? (
-            <button
-              onClick={() => setShowPasswordLogin(true)}
-              className="w-full py-2.5 text-xs text-muted hover:text-noir border border-border-subtle rounded-md transition-smooth"
-            >
-              الدخول بكلمة المرور (احتياطي)
-            </button>
-          ) : (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-1 text-right">
-                <label className="text-xs font-bold text-noir">البريد الإلكتروني</label>
+          {/* Form Login (Direct & Reliable) */}
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div className="space-y-1.5 text-right">
+              <label className="text-xs font-bold text-noir">البريد الإلكتروني للإدارة</label>
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="admin@kounoz.sa"
+                required
+                className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none font-mono"
+              />
+            </div>
+            <div className="space-y-1.5 text-right">
+              <label className="text-xs font-bold text-noir">كلمة المرور</label>
+              <div className="relative">
                 <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
-                />
-              </div>
-              <div className="space-y-1 text-right">
-                <label className="text-xs font-bold text-noir">كلمة المرور</label>
-                <input
-                  type="password"
+                  type={showAdminPassword ? 'text' : 'password'}
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="أدخل كلمة المرور الخاصة بالمدير"
                   required
-                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none"
+                  className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-md text-xs text-noir focus:border-accent focus:outline-none font-mono pl-10"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword(!showAdminPassword)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-noir transition-colors"
+                >
+                  {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-md flex items-center justify-center gap-2"
-              >
-                <Lock size={14} />
-                دخول لوحة التحكم
-              </button>
-            </form>
-          )}
+            </div>
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-md flex items-center justify-center gap-2"
+            >
+              <Lock size={14} />
+              دخول لوحة التحكم
+            </button>
+          </form>
+
+          {/* Change Password Button for Admin */}
+          <div className="pt-2 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setChangeEmail(emailInput || 'admin@kounoz.sa');
+                setIsChangePasswordOpen(true);
+                setChangePasswordError('');
+                setChangePasswordSuccess('');
+              }}
+              className="text-xs text-accent hover:text-noir font-bold transition-colors inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg hover:bg-surface border border-transparent hover:border-border-subtle"
+            >
+              <KeyRound size={14} className="text-[#D4AF37]" />
+              <span>تغيير كلمة مرور الإدارة (Check by Email & Password)</span>
+            </button>
+          </div>
 
           <div className="pt-2 border-t border-border-subtle text-center">
             <Link href="/" className="text-xs text-muted hover:text-noir transition-smooth inline-flex items-center gap-1">
@@ -637,6 +856,145 @@ export default function AdminPage() {
             </Link>
           </div>
         </div>
+
+        {/* Change Password Modal (also available on login screen) */}
+        <AnimatePresence>
+          {isChangePasswordOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="w-full max-w-md bg-card rounded-2xl border border-border-subtle shadow-2xl overflow-hidden text-right"
+              >
+                <div className="p-5 border-b border-border-subtle bg-gradient-to-r from-[#20050D] via-[#4A0A19] to-[#20050D] text-white flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/50 flex items-center justify-center text-[#D4AF37]">
+                      <KeyRound size={16} />
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-white">تغيير كلمة مرور الإدارة</h3>
+                      <p className="text-[11px] text-[#EDE5D8]/70">فحص البريد وكلمة المرور الحالية (Check by Email & Password)</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordOpen(false)}
+                    className="p-1 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleChangePasswordSubmit} className="p-6 space-y-4">
+                  {changePasswordError && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+                      <span className="font-bold">{changePasswordError}</span>
+                    </div>
+                  )}
+
+                  {changePasswordSuccess && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold">
+                      <span>{changePasswordSuccess}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-noir block">البريد الإلكتروني للمدير</label>
+                    <input
+                      type="email"
+                      value={changeEmail}
+                      onChange={(e) => setChangeEmail(e.target.value)}
+                      placeholder="admin@kounoz.sa"
+                      required
+                      className="w-full px-3.5 py-2.5 bg-surface border border-border-subtle rounded-xl text-xs text-noir focus:border-accent focus:outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-noir block">كلمة المرور الحالية (Current Password)</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPass ? 'text' : 'password'}
+                        value={currentPasswordInput}
+                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                        placeholder="أدخل كلمة المرور الحالية"
+                        required
+                        className="w-full px-3.5 py-2.5 bg-surface border border-border-subtle rounded-xl text-xs text-noir focus:border-accent focus:outline-none font-mono pl-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPass(!showCurrentPass)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-noir"
+                      >
+                        {showCurrentPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-noir block">كلمة المرور الجديدة (New Password)</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPass ? 'text' : 'password'}
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        placeholder="6 خانات أو أكثر"
+                        required
+                        className="w-full px-3.5 py-2.5 bg-surface border border-border-subtle rounded-xl text-xs text-noir focus:border-accent focus:outline-none font-mono pl-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-noir"
+                      >
+                        {showNewPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-noir block">تأكيد كلمة المرور الجديدة (Confirm New Password)</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        value={confirmNewPasswordInput}
+                        onChange={(e) => setConfirmNewPasswordInput(e.target.value)}
+                        placeholder="أعد إدخال كلمة المرور الجديدة"
+                        required
+                        className="w-full px-3.5 py-2.5 bg-surface border border-border-subtle rounded-xl text-xs text-noir focus:border-accent focus:outline-none font-mono pl-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-noir"
+                      >
+                        {showConfirmPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 pt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 py-3 bg-[#7A0C28] hover:bg-noir text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Save size={15} />
+                      <span>تحديث وحفظ كلمة المرور</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsChangePasswordOpen(false)}
+                      className="px-4 py-3 bg-surface hover:bg-mutedbg text-muted hover:text-noir text-xs font-semibold rounded-xl border border-border-subtle transition-all"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
@@ -664,8 +1022,8 @@ export default function AdminPage() {
       <header className="sticky top-0 z-40 bg-card border-b border-border-subtle shadow-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative w-11 h-11">
-              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" />
+            <div className="relative w-11 h-11 rounded-full bg-[#FAF6EE] p-1 border border-[#D4AF37]/50 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain p-0.5" />
             </div>
             <div className="flex flex-col text-right">
               <div className="flex items-center gap-2">
@@ -676,7 +1034,22 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                setChangeEmail(adminUser?.email || emailInput || 'admin@kounoz.sa');
+                setIsChangePasswordOpen(true);
+                setChangePasswordError('');
+                setChangePasswordSuccess('');
+              }}
+              className="px-3.5 py-2 bg-[#FAF6EE] hover:bg-[#D4AF37]/20 text-[#7A0C28] text-xs font-bold rounded-md border border-[#D4AF37]/50 transition-smooth flex items-center gap-1.5 shadow-sm"
+              title="تغيير كلمة مرور الإدارة"
+            >
+              <KeyRound size={14} className="text-[#D4AF37]" />
+              <span className="hidden sm:inline">تغيير كلمة المرور</span>
+            </button>
+
             <Link
               href="/"
               className="px-4 py-2 bg-surface hover:bg-mutedbg text-noir text-xs font-semibold rounded-md border border-border-subtle transition-smooth flex items-center gap-1.5"
@@ -707,7 +1080,7 @@ export default function AdminPage() {
                 <MessageCircle size={20} className="fill-current" />
               </div>
               <div>
-                <h2 className="font-serif text-xl font-bold text-white flex items-center gap-2">
+                <h2 className="font-serif text-xl font-bold text-noir flex items-center gap-2">
                   <span>إعدادات رقم الواتساب والطلب المباشر</span>
                   <Sparkles size={14} className="text-[#AD8A55]" />
                 </h2>
@@ -735,12 +1108,12 @@ export default function AdminPage() {
                       type="text"
                       value={whatsappNumber}
                       onChange={(e) => setWhatsappNumber(e.target.value)}
-                      placeholder="01000943197 أو +201000943197"
+                      placeholder="01022822123 أو +201022822123"
                       className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs font-mono font-bold text-noir focus:border-emerald-600 focus:outline-none"
                     />
                   </div>
                   <p className="text-[10px] text-muted">
-                    يقبل الرقم المصري المباشر (مثل 01000943197) أو السعودي أو الدولي بكود الدولة.
+                    يقبل الرقم المصري المباشر (مثل 01022822123) أو السعودي أو الدولي بكود الدولة.
                   </p>
                 </div>
 
@@ -767,10 +1140,64 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* Direct Call Phone, Wholesale Phone & Store Email Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-noir flex items-center gap-1.5">
+                    <Phone size={13} className="text-accent" />
+                    <span>هاتف الاتصال المباشر:</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={storePhone}
+                    onChange={(e) => setStorePhone(e.target.value)}
+                    placeholder="01022822123"
+                    className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs font-mono font-bold text-noir focus:border-accent focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted">
+                    يظهر في القائمة الجانبية وأسفل الموقع.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-noir flex items-center gap-1.5">
+                    <Phone size={13} className="text-accent" />
+                    <span>هاتف طلب الجملة:</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={wholesalePhone}
+                    onChange={(e) => setWholesalePhone(e.target.value)}
+                    placeholder="01066583964"
+                    className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs font-mono font-bold text-noir focus:border-accent focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted">
+                    يظهر في الفوتر لطلبات تجار الجملة.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-noir flex items-center gap-1.5">
+                    <Mail size={13} className="text-accent" />
+                    <span>البريد الإلكتروني للدعم:</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={storeEmail}
+                    onChange={(e) => setStoreEmail(e.target.value)}
+                    placeholder="Kounozthobe@gmail.com"
+                    className="w-full px-4 py-3 bg-surface border border-border-subtle rounded-lg text-xs font-mono font-bold text-noir focus:border-accent focus:outline-none"
+                  />
+                  <p className="text-[10px] text-muted">
+                    يظهر للعملاء في الفوتر لخدمة العملاء.
+                  </p>
+                </div>
+              </div>
+
               {/* Greeting Note */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-noir block">
-                  نص الرسالة الترحيبية الافتراضية:
+                  نص الرسالة الترحيبية الافتراضية للواتساب:
                 </label>
                 <input
                   type="text"
@@ -797,11 +1224,11 @@ export default function AdminPage() {
                   ) : (
                     <Save size={14} />
                   )}
-                  <span>{whatsappSaved ? 'تم حفظ الرقم بنجاح!' : 'حفظ وتطبيق رقم الواتساب في كامل المتجر'}</span>
+                  <span>{whatsappSaved ? 'تم حفظ البيانات بنجاح!' : 'حفظ وتطبيق أرقام وبيانات التواصل في كامل المتجر'}</span>
                 </motion.button>
 
                 <span className="text-[11px] text-muted">
-                  * يتم تحديث الأيقونة العائمة، صفحة تفاصيل القطعة، والسلة فورياً بدون إعادة تحميل.
+                  * يتم تحديث القائمة الجانبية، الأيقونة العائمة، السلة، والفوتر فورياً بدون إعادة تحميل.
                 </span>
               </div>
             </div>
@@ -826,7 +1253,7 @@ export default function AdminPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span><strong>حقيبة المشتريات:</strong> إرسال كامل محتويات السلة في رسالة منسقة.</span>
+                  <span><strong>سلة المشتريات:</strong> إرسال كامل محتويات السلة في رسالة منسقة.</span>
                 </li>
               </ul>
             </div>
@@ -1072,6 +1499,275 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* ── Banner Slider Manager (Before Video) ──────────────────────── */}
+        <div className="bg-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-main">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded bg-card border border-border-subtle text-accent">
+                <ImageIcon size={16} />
+              </div>
+              <div>
+                <h2 className="font-serif text-xl font-bold text-noir">سلايدر البانرات الإعلانية (قبل جزئية الفيديو)</h2>
+                <p className="text-[11px] text-muted">إدارة صور وبانرات السلايدر العريض بأعلى الصفحة الرئيسية (16:9) — أضف أو عدّل أي بانر</p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-3 py-1 bg-accent/15 text-accent border border-accent/30 rounded-full">
+              {bannerSlides.length} بانرات معروضة
+            </span>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bannerSlides.map((slideUrl, idx) => (
+                <div key={idx} className="p-4 bg-surface rounded-xl border border-border-subtle space-y-3 relative group">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-noir flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px]">
+                        {idx + 1}
+                      </span>
+                      بانر الشريحة {idx + 1}
+                    </span>
+                    {bannerSlides.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = bannerSlides.filter((_, i) => i !== idx);
+                          setBannerSlides(updated);
+                        }}
+                        className="text-[11px] text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 rounded hover:bg-red-50 transition-colors"
+                      >
+                        حذف البانر
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Banner Preview Frame */}
+                  <div className="relative aspect-[16/9] rounded-lg overflow-hidden border border-border-subtle bg-[#5A081D]">
+                    {slideUrl ? (
+                      <Image
+                        src={slideUrl}
+                        alt={`بانر ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                        unoptimized={slideUrl.startsWith('data:')}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted text-xs">
+                        لا توجد صورة
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload / Replace */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className={`flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
+                      uploadingBannerIdx === idx
+                        ? 'bg-surface text-muted border-border-subtle cursor-not-allowed'
+                        : 'bg-noir hover:bg-accent text-white border-transparent'
+                    }`}>
+                      {uploadingBannerIdx === idx ? (
+                        <><Loader2 size={13} className="animate-spin" /> جاري الرفع...</>
+                      ) : (
+                        <><Upload size={13} /> {slideUrl ? 'استبدال الصورة' : 'اختر صورة من الجهاز'}</>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingBannerIdx !== null}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingBannerIdx(idx);
+                          try {
+                            const url = await uploadImage(file);
+                            const updated = [...bannerSlides];
+                            updated[idx] = url;
+                            setBannerSlides(updated);
+                            saveBannerSlides(updated);
+                            showToast(`تم تحديث بانر الشريحة ${idx + 1} بنجاح ✅`);
+                          } catch {
+                            alert('حدث خطأ أثناء رفع الصورة');
+                          } finally {
+                            setUploadingBannerIdx(null);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border-subtle">
+              <button
+                type="button"
+                onClick={() => {
+                  setBannerSlides([...bannerSlides, '/images/banners/banner-craftsmanship.png']);
+                }}
+                className="px-4 py-2.5 rounded-lg border border-border-subtle hover:border-noir text-xs font-bold text-noir transition-all flex items-center gap-2 hover:bg-surface"
+              >
+                <Plus size={14} className="text-accent" />
+                <span>إضافة شريحة بانر جديدة</span>
+              </button>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  saveBannerSlides(bannerSlides);
+                  setBannerSaved(true);
+                  setTimeout(() => setBannerSaved(false), 3000);
+                  showToast('تم حفظ سلايدر البانرات بنجاح ✅');
+                }}
+                className="px-8 py-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-lg transition-smooth shadow-md flex items-center gap-2"
+              >
+                {bannerSaved ? <><Check size={14} /> تم الحفظ بنجاح!</> : <><Check size={14} /> حفظ تغييرات السلايدر</>}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Hero Video Manager (Intro Video) ─────────────────────────── */}
+        <div className="bg-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border-subtle flex items-center gap-3 bg-main">
+            <div className="p-2 rounded bg-card border border-border-subtle text-accent">
+              <UploadCloud size={16} />
+            </div>
+            <div>
+              <h2 className="font-serif text-xl font-bold text-noir">فيديو الواجهة التعريفي (Intro Video)</h2>
+              <p className="text-[11px] text-muted">غيّر الفيديو الذي يظهر في الصفحة الرئيسية — ارفع من جهازك (MP4/WebM) أو الصق رابطاً</p>
+            </div>
+          </div>
+
+          <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+            {/* Left: Controls */}
+            <div className="md:col-span-7 space-y-4 text-right">
+              {/* Upload from device */}
+              <div className="p-4 bg-surface rounded-lg border border-border-subtle space-y-3">
+                <span className="text-xs font-bold text-noir flex items-center gap-1.5">
+                  <FileUp size={14} className="text-accent" />
+                  رفع فيديو من جهازك (MP4 / WebM):
+                </span>
+                <label className={`cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg border text-xs font-bold transition-all ${uploadingHeroVideo ? 'bg-surface text-muted border-border-subtle cursor-not-allowed' : 'bg-noir hover:bg-accent text-white border-transparent'}`}>
+                  {uploadingHeroVideo ? (
+                    <><Loader2 size={14} className="animate-spin" /> جاري رفع الفيديو...</>
+                  ) : (
+                    <><Upload size={14} /> اختر ملف فيديو من جهازك</>
+                  )}
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/*"
+                    className="hidden"
+                    disabled={uploadingHeroVideo}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingHeroVideo(true);
+                      try {
+                        const url = await uploadHeroVideo(file);
+                        setHeroVideoUrl(url);
+                        saveHeroVideo(url);
+                        setHeroVideoSaved(true);
+                        setTimeout(() => setHeroVideoSaved(false), 3000);
+                        showToast('تم رفع وحفظ الفيديو التعريفي بنجاح ✅');
+                      } catch (err) {
+                        console.error(err);
+                        alert('حدث خطأ أثناء رفع الفيديو');
+                      } finally {
+                        setUploadingHeroVideo(false);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Or enter URL */}
+              <div className="p-4 bg-surface rounded-lg border border-border-subtle space-y-2">
+                <span className="text-xs font-bold text-noir flex items-center gap-1.5">
+                  <LinkIcon size={13} className="text-accent" />
+                  أو الصق رابط الفيديو (URL):
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://res.cloudinary.com/... أو /videos/intro.mp4"
+                    value={heroVideoInput}
+                    onChange={(e) => setHeroVideoInput(e.target.value)}
+                    className="flex-1 px-3 py-2 bg-card text-noir text-xs rounded border border-border-subtle focus:border-noir focus:outline-none"
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      if (!heroVideoInput.trim()) return;
+                      const url = heroVideoInput.trim();
+                      setHeroVideoUrl(url);
+                      saveHeroVideo(url);
+                      setHeroVideoInput('');
+                      setHeroVideoSaved(true);
+                      setTimeout(() => setHeroVideoSaved(false), 3000);
+                      showToast('تم حفظ رابط الفيديو بنجاح ✅');
+                    }}
+                    className="px-4 py-2 bg-accent hover:bg-noir text-white text-xs font-bold rounded transition-smooth flex items-center gap-1.5"
+                  >
+                    <Check size={13} />
+                    حفظ
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Current video info */}
+              <div className="p-3 bg-surface rounded-lg border border-border-subtle flex items-center justify-between gap-3">
+                <span className="text-[10px] text-muted font-mono truncate flex-1 text-left">{heroVideoUrl}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {heroVideoSaved && (
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
+                      <Check size={10} />
+                      تم الحفظ
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroVideoUrl(DEFAULT_HERO_VIDEO);
+                      saveHeroVideo(DEFAULT_HERO_VIDEO);
+                      showToast('تم إعادة تعيين الفيديو للافتراضي ✅');
+                    }}
+                    className="text-[10px] text-muted hover:text-red-600 px-2 py-1 rounded border border-border-subtle hover:border-red-300 transition-smooth flex items-center gap-1"
+                  >
+                    <RefreshCw size={10} />
+                    إعادة الافتراضي
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Live Video Preview */}
+            <div className="md:col-span-5">
+              <span className="text-xs font-bold text-noir block mb-2 text-right">المعاينة الحية للفيديو:</span>
+              <div className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border-subtle bg-surface shadow-md">
+                <video
+                  key={heroVideoUrl}
+                  src={heroVideoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-noir/50 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-3 right-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-card/90 backdrop-blur-md border border-border-subtle text-slate-200 text-[10px] font-semibold shadow-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  معاينة حية
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="p-6 bg-card rounded-lg border border-border-subtle shadow-sm flex items-center justify-between text-right">
@@ -1158,20 +1854,22 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-border-subtle no-scrollbar">
-            {CATEGORIES.map((cat) => (
-              <button
+          {/* Category Filter Pills (زي صفحة العميل) */}
+          <div className="flex items-center gap-2 overflow-x-auto pt-3 border-t border-border-subtle no-scrollbar">
+            {['جميع القطع', 'تخفيضات', 'وصل حديثاً', 'كولكشن الشتوي', 'كولكشن الصيفي'].map((cat) => (
+              <motion.button
                 key={cat}
+                type="button"
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedFilterCategory(cat)}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-smooth whitespace-nowrap ${
+                className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-md text-xs font-semibold tracking-wide transition-smooth whitespace-nowrap ${
                   selectedFilterCategory === cat
-                    ? 'bg-noir text-white shadow-sm'
-                    : 'bg-surface text-muted hover:text-noir border border-border-subtle'
+                    ? 'bg-accent text-gray-200 shadow-md shadow-accent/30 border border-accent-hover/50'
+                    : 'bg-card text-muted border border-border-subtle hover:text-noir hover:border-accent hover:bg-surface'
                 }`}
               >
                 {cat}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -1389,10 +2087,10 @@ export default function AdminPage() {
                           onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
                           className="w-full px-3 py-2.5 bg-surface text-noir text-xs rounded-md border border-border-subtle focus:border-noir focus:outline-none"
                         >
-                          <option value="جلابيب كلاسيكية">جلابيب كلاسيكية</option>
-                          <option value="أثواب ملكية">أثواب ملكية</option>
-                          <option value="بشوت ومناسبات">بشوت ومناسبات</option>
-                          <option value="إكسسوارات وشيل">إكسسوارات وشيل</option>
+                          <option value="كولكشن الصيفي">كولكشن الصيفي</option>
+                          <option value="كولكشن الشتوي">كولكشن الشتوي</option>
+                          <option value="وصل حديثاً">وصل حديثاً</option>
+                          <option value="تخفيضات">تخفيضات</option>
                         </select>
                       </div>
 
@@ -1558,81 +2256,193 @@ export default function AdminPage() {
                               </button>
                             </div>
 
-                            {/* Color Image Row: Upload Photo or Enter URL */}
-                            <div className="flex items-center gap-2.5 pt-2 border-t border-dashed border-border-subtle bg-surface/60 p-2 rounded-md">
-                              {/* Mini Image Preview */}
-                              {color.image_url ? (
-                                <div className="relative w-12 h-12 rounded-md overflow-hidden border border-border-subtle flex-shrink-0 group bg-main">
-                                  <Image
-                                    src={color.image_url}
-                                    alt={color.name}
-                                    fill
-                                    className="object-cover"
+                            {/* Color Image Row: Main Upload + 4 Angles Customizer */}
+                            <div className="space-y-2 pt-2 border-t border-dashed border-border-subtle bg-surface/60 p-2.5 rounded-md">
+                              <div className="flex items-center gap-2.5">
+                                {/* Mini Image Preview */}
+                                {color.image_url ? (
+                                  <div className="relative w-12 h-12 rounded-md overflow-hidden border border-border-subtle flex-shrink-0 group bg-main shadow-xs">
+                                    <Image
+                                      src={color.image_url}
+                                      alt={color.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => updateColor(cIdx, { image_url: '', images: [] })}
+                                      className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="إزالة صورة هذا اللون"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 rounded-md border border-dashed border-border-subtle flex items-center justify-center flex-shrink-0 text-muted bg-card">
+                                    <ImageIcon size={18} />
+                                  </div>
+                                )}
+
+                                {/* Upload Button + URL Input */}
+                                <div className="flex-1 space-y-1 text-right">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <label
+                                      className={`cursor-pointer px-2.5 py-1 text-[11px] font-bold rounded border transition-smooth inline-flex items-center gap-1.5 ${
+                                        uploadingColorIdx === cIdx && uploadingColorSlot?.slot === 0
+                                          ? 'bg-noir text-white opacity-80'
+                                          : 'bg-card hover:bg-noir hover:text-white border-border-subtle text-noir'
+                                      }`}
+                                    >
+                                      {uploadingColorIdx === cIdx && uploadingColorSlot?.slot === 0 ? (
+                                        <>
+                                          <Loader2 size={12} className="animate-spin" />
+                                          <span>جاري رفع صورة {color.name}...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Upload size={12} />
+                                          <span>{color.image_url ? 'تغيير صورة هذا اللون' : 'رفع صورة لهذا اللون'}</span>
+                                        </>
+                                      )}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingColorIdx === cIdx}
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleColorImageUpload(cIdx, file, 0);
+                                        }}
+                                      />
+                                    </label>
+
+                                    {color.image_url && (
+                                      <button
+                                        type="button"
+                                        onClick={() => applyColorImageToAllAngles(cIdx)}
+                                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent/15 text-accent hover:bg-accent/25 border border-accent/30 transition-smooth inline-flex items-center gap-1"
+                                        title="تطبيق هذه الصورة على زوايا اللون الأربعة"
+                                      >
+                                        <Copy size={10} />
+                                        <span>تطبيق على الـ 4 زوايا</span>
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleColorAngles(cIdx)}
+                                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface hover:bg-card border border-border-subtle text-muted transition-smooth inline-flex items-center gap-1 mr-auto"
+                                    >
+                                      <span>الزوايا الـ 4 للون</span>
+                                      {expandedColorAngles[cIdx] ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                    </button>
+                                  </div>
+
+                                  <input
+                                    type="text"
+                                    value={color.image_url || ''}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      updateColor(cIdx, {
+                                        image_url: val,
+                                        images: [val, val, val, val],
+                                      });
+                                    }}
+                                    placeholder="أو الصق رابط صورة اللون (URL)..."
+                                    className="w-full px-2 py-1 bg-card text-noir text-[10px] rounded border border-border-subtle focus:border-noir focus:outline-none"
                                   />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateColor(cIdx, { image_url: '' })}
-                                    className="absolute inset-0 bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="إزالة صورة هذا اللون"
-                                  >
-                                    <X size={14} />
-                                  </button>
                                 </div>
-                              ) : (
-                                <div className="w-12 h-12 rounded-md border border-dashed border-border-subtle flex items-center justify-center flex-shrink-0 text-muted bg-card">
-                                  <ImageIcon size={18} />
+                              </div>
+
+                              {/* 4 Angles Detailed Manager for This Color */}
+                              {expandedColorAngles[cIdx] && (
+                                <div className="mt-2 pt-2 border-t border-border-subtle space-y-2 bg-card/60 p-2.5 rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-noir flex items-center gap-1">
+                                      <Sparkles size={11} className="text-accent" />
+                                      <span>تخصيص صور زوايا لون "{color.name}" (4 أشكال):</span>
+                                    </span>
+                                    <span className="text-[10px] text-muted">
+                                      تظهر هذه الزوايا الأربعة عند اختيار هذا اللون في المتجر
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {[
+                                      { label: '1. أمامي (الرئيسي)', idx: 0 },
+                                      { label: '2. خلفي', idx: 1 },
+                                      { label: '3. جانبي / القَصّة', idx: 2 },
+                                      { label: '4. نسيج وتفاصيل', idx: 3 },
+                                    ].map((angle) => {
+                                      const angleImg = (color.images && color.images[angle.idx]) || (angle.idx === 0 ? color.image_url : '') || '';
+                                      const isSlotUploading = uploadingColorIdx === cIdx && uploadingColorSlot?.slot === angle.idx;
+
+                                      return (
+                                        <div key={angle.idx} className="p-2 bg-surface rounded-md border border-border-subtle space-y-1.5 text-right">
+                                          <div className="flex items-center justify-between text-[10px]">
+                                            <span className="font-bold text-noir">{angle.label}</span>
+                                            {angleImg && (
+                                              <button
+                                                type="button"
+                                                onClick={() => updateColorAngle(cIdx, angle.idx, '')}
+                                                className="text-muted hover:text-red-600 transition-colors"
+                                                title="مسح"
+                                              >
+                                                <X size={11} />
+                                              </button>
+                                            )}
+                                          </div>
+
+                                          <div className="flex items-center gap-2">
+                                            {angleImg ? (
+                                              <div className="relative w-9 h-9 rounded overflow-hidden border border-border-subtle flex-shrink-0 bg-main">
+                                                <Image src={angleImg} alt={angle.label} fill className="object-cover" />
+                                              </div>
+                                            ) : (
+                                              <div className="w-9 h-9 rounded border border-dashed border-border-subtle flex items-center justify-center flex-shrink-0 text-muted bg-card">
+                                                <ImageIcon size={13} />
+                                              </div>
+                                            )}
+
+                                            <div className="flex-1 space-y-1">
+                                              <label className="cursor-pointer px-2 py-0.5 text-[10px] font-bold rounded border bg-card hover:bg-noir hover:text-white border-border-subtle text-noir transition-smooth inline-flex items-center gap-1">
+                                                {isSlotUploading ? (
+                                                  <>
+                                                    <Loader2 size={10} className="animate-spin" />
+                                                    <span>رفع...</span>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Upload size={10} />
+                                                    <span>{angleImg ? 'تغيير' : 'رفع'}</span>
+                                                  </>
+                                                )}
+                                                <input
+                                                  type="file"
+                                                  accept="image/*"
+                                                  className="hidden"
+                                                  disabled={isSlotUploading}
+                                                  onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleColorImageUpload(cIdx, file, angle.idx);
+                                                  }}
+                                                />
+                                              </label>
+                                              <input
+                                                type="text"
+                                                value={angleImg}
+                                                onChange={(e) => updateColorAngle(cIdx, angle.idx, e.target.value)}
+                                                placeholder="رابط الصورة..."
+                                                className="w-full px-1.5 py-0.5 bg-card text-noir text-[9px] rounded border border-border-subtle focus:outline-none"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               )}
-
-                              {/* Upload Button + URL Input */}
-                              <div className="flex-1 space-y-1 text-right">
-                                <div className="flex items-center gap-2">
-                                  <label
-                                    className={`cursor-pointer px-2.5 py-1 text-[11px] font-bold rounded border transition-smooth inline-flex items-center gap-1.5 ${
-                                      uploadingColorIdx === cIdx
-                                        ? 'bg-noir text-white opacity-80'
-                                        : 'bg-card hover:bg-noir hover:text-white border-border-subtle text-noir'
-                                    }`}
-                                  >
-                                    {uploadingColorIdx === cIdx ? (
-                                      <>
-                                        <Loader2 size={12} className="animate-spin" />
-                                        <span>جاري رفع صورة {color.name}...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Upload size={12} />
-                                        <span>{color.image_url ? 'تغيير صورة هذا اللون' : 'رفع صورة لهذا اللون'}</span>
-                                      </>
-                                    )}
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="hidden"
-                                      disabled={uploadingColorIdx === cIdx}
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) handleColorImageUpload(cIdx, file);
-                                      }}
-                                    />
-                                  </label>
-
-                                  {color.image_url && (
-                                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
-                                      <Check size={11} />
-                                      صورة اللون مفعلة
-                                    </span>
-                                  )}
-                                </div>
-
-                                <input
-                                  type="text"
-                                  value={color.image_url || ''}
-                                  onChange={(e) => updateColor(cIdx, { image_url: e.target.value })}
-                                  placeholder="أو الصق رابط صورة اللون (URL)..."
-                                  className="w-full px-2 py-1 bg-card text-noir text-[10px] rounded border border-border-subtle focus:border-noir focus:outline-none"
-                                />
-                              </div>
                             </div>
                           </div>
                         ))}

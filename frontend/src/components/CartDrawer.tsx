@@ -2,17 +2,14 @@
 
 import React, { useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { X, Trash2, Plus, Minus, ShoppingBag, MessageCircle, ShoppingCart } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { formatWhatsAppUrl, getWhatsAppNumber, getCurrentCustomer } from '../lib/api';
+import { formatWhatsAppUrl, getWhatsAppNumber } from '../lib/api';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 export function CartDrawer() {
-  const router = useRouter();
-  const { data: session } = useSession();
+  const { dir } = useLanguage();
   const { items, isOpen, closeCart, updateQuantity, removeItem, totalAmount, clearCart } = useCart();
 
   // Background Scroll Locking
@@ -36,7 +33,7 @@ export function CartDrawer() {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 z-50 overflow-hidden" dir={dir}>
           {/* Backdrop with fade */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -70,7 +67,7 @@ export function CartDrawer() {
               <div className="p-5 sm:p-6 border-b border-border-subtle flex items-center justify-between bg-main">
                 <div className="flex items-center gap-2.5">
                   <ShoppingBag size={19} className="text-noir" />
-                  <h2 className="font-serif text-xl font-bold text-noir">حقيبة المشتريات</h2>
+                  <h2 className="font-serif text-xl font-bold text-noir">سلة المشتريات</h2>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
@@ -92,12 +89,12 @@ export function CartDrawer() {
                     className="h-full flex flex-col items-center justify-center text-center space-y-4 text-muted py-16"
                   >
                     <ShoppingBag size={42} className="stroke-1 text-muted/40" />
-                    <p className="text-sm font-medium">حقيبة المشتريات فارغة حالياً.</p>
+                    <p className="text-sm font-medium">سلة المشتريات فارغة حالياً.</p>
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={closeCart}
-                      className="px-6 py-3 bg-noir text-white text-xs font-bold rounded-md hover:bg-accent transition-smooth"
+                      className="px-6 py-3 bg-accent text-slate-100 text-xs font-bold rounded-md hover:bg-accent-hover transition-smooth shadow-md shadow-accent/25"
                     >
                       تصفح التشكيلة
                     </motion.button>
@@ -186,21 +183,14 @@ export function CartDrawer() {
                     </span>
                   </div>
                   <p className="text-[11px] text-muted leading-relaxed">
-                    الضرائب والشحن الفاخر المجاني يتم احتسابها عند إتمام الطلب.
+                    الشحن والتوصيل يتم تأكيده مباشرة عبر واتساب مع فريق خدمة العملاء.
                   </p>
 
-                  {/* Complete Order via WhatsApp */}
+                  {/* Complete Order directly via WhatsApp */}
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
-                      const isLoggedIn = !!(session?.user || getCurrentCustomer());
-                      if (!isLoggedIn) {
-                        closeCart();
-                        router.push('/login?callbackUrl=/checkout');
-                        return;
-                      }
-
                       const itemsSummary = items.map((it, idx) => {
                         const colorPart = it.color ? ` | اللون: ${it.color}` : '';
                         const sizePart = it.size ? ` | المقاس: ${it.size}` : '';
@@ -208,14 +198,14 @@ export function CartDrawer() {
                       }).join('\n');
 
                       const msg = `السلام عليكم ورحمة الله،
-أود إتمام وتأكيد طلبي من متجر كنوز الفاخر:
+أود طلب وتأكيد محتويات السلة من متجر كنوز الفاخر:
 ----------------------------------------
 ${itemsSummary}
 ----------------------------------------
 💰 المجموع الإجمالي: ${totalAmount.toFixed(0)} ج.م
 📦 إجمالي القطع: ${items.reduce((acc, i) => acc + i.quantity, 0)}
 
-يرجى إرسال بيانات الدفع والتأكيد لتجهيز الشحن الفاخر. شكراً!`;
+يرجى تأكيد توفر الطلب وبيانات الشحن والتوصيل. شكراً!`;
 
                       const url = formatWhatsAppUrl(getWhatsAppNumber(), msg);
                       window.open(url, '_blank', 'noopener,noreferrer');
@@ -226,20 +216,11 @@ ${itemsSummary}
                     <span>إرسال وتأكيد الطلب بالكامل عبر واتساب</span>
                   </motion.button>
 
-                  <Link
-                    href="/checkout"
-                    onClick={closeCart}
-                    className="w-full py-3.5 bg-[#1C1C1E] hover:bg-[#C5A059] text-white text-xs font-bold rounded-md transition-all shadow-sm flex items-center justify-center gap-2"
-                  >
-                    <ShoppingCart size={14} />
-                    إتمام الطلب والدفع
-                  </Link>
-
                   <button
                     onClick={clearCart}
                     className="w-full text-center text-xs text-muted hover:text-noir transition-smooth underline py-1"
                   >
-                    تفريغ الحقيبة
+                    تفريغ السلة
                   </button>
                 </div>
               )}

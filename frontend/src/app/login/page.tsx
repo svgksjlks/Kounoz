@@ -21,14 +21,15 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  KeyRound,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getCurrentCustomer, loginCustomer, registerCustomer, logoutCustomer, isValidEmail, isAdminEmail } from '../../lib/api';
+import { useLanguage } from '../../context/LanguageContext';
+import { getCurrentCustomer, loginCustomer, registerCustomer, logoutCustomer, isValidEmail, isAdminEmail, loginWithFacebook } from '../../lib/api';
 import { User } from '../../types';
 
-const POPULAR_DOMAINS = ['@gmail.com', '@outlook.com', '@yahoo.com', '@icloud.com', '@github.com'];
-
 function LoginContent() {
+  const { dir } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
@@ -78,15 +79,13 @@ function LoginContent() {
     });
   };
 
-  // Append domain helper
-  const applyDomain = (domain: string, isLogin: boolean) => {
-    if (isLogin) {
-      const base = loginEmail.split('@')[0];
-      setLoginEmail(`${base}${domain}`);
-    } else {
-      const base = regEmail.split('@')[0];
-      setRegEmail(`${base}${domain}`);
-    }
+  // Quick fill helper for testing
+  const fillCredentials = (email: string, pass: string) => {
+    setActiveTab('login');
+    setLoginEmail(email);
+    setLoginPassword(pass);
+    setErrorMsg('');
+    setSuccessMsg('');
   };
 
   // Handle Manual Login
@@ -103,7 +102,7 @@ function LoginContent() {
     }
 
     if (!isValidEmail(cleanEmail)) {
-      setErrorMsg('يرجى كتابة بريد إلكتروني صالح ومكتمل (مثال: name@gmail.com أو name@github.com)');
+      setErrorMsg('يرجى كتابة بريد إلكتروني صحيح ومكتمل (مثال: name@gmail.com)');
       return;
     }
 
@@ -120,12 +119,12 @@ function LoginContent() {
           } else {
             router.push(callbackUrl === '/login' ? '/' : callbackUrl);
           }
-        }, 800);
+        }, 600);
       } else {
         setErrorMsg(res.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
       }
     } catch {
-      setErrorMsg('حدث خطأ أثناء تسجيل الدخول');
+      setErrorMsg('حدث خطأ أثناء تسجيل الدخول، يرجى المحاولة مرة أخرى');
     } finally {
       setLoading(false);
     }
@@ -145,7 +144,7 @@ function LoginContent() {
     }
 
     if (!isValidEmail(cleanEmail)) {
-      setErrorMsg('يرجى كتابة بريد إلكتروني حقيقي وصحيح (مثل name@gmail.com أو name@github.com)');
+      setErrorMsg('يرجى كتابة بريد إلكتروني صحيح (مثال: name@gmail.com)');
       return;
     }
 
@@ -167,7 +166,7 @@ function LoginContent() {
           } else {
             router.push(callbackUrl === '/login' ? '/' : callbackUrl);
           }
-        }, 1000);
+        }, 800);
       } else {
         setErrorMsg(res.error || 'تعذر إنشاء الحساب');
       }
@@ -187,11 +186,8 @@ function LoginContent() {
     }
   };
 
-  const isLoginEmailValid = isValidEmail(loginEmail);
-  const isRegEmailValid = isValidEmail(regEmail);
-
   return (
-    <div className="min-h-screen bg-[#F6F2E9] flex flex-col justify-between" dir="rtl">
+    <div className="min-h-screen bg-[#F6F2E9] flex flex-col justify-between" dir={dir}>
       {/* Top Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-[#E2D7C3] sticky top-0 z-30 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 h-18 flex items-center justify-between">
@@ -204,8 +200,8 @@ function LoginContent() {
           </Link>
 
           <Link href="/" className="flex items-center gap-3">
-            <div className="relative w-10 h-10">
-              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" priority />
+            <div className="relative w-10 h-10 rounded-full bg-[#FAF6EE] p-1 border border-[#D4AF37]/50 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain p-0.5" priority />
             </div>
             <div className="flex flex-col text-right">
               <span className="font-serif text-xl font-bold text-[#1C1610] tracking-wide">كنوز</span>
@@ -261,7 +257,7 @@ function LoginContent() {
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6F2E9] text-[#AD8A55] text-xs font-bold mb-2 border border-[#E2D7C3]">
                   <Sparkles size={12} />
-                  <span>عضو مميز في كنوز</span>
+                  <span>عضو مميز في متجر كنوز</span>
                 </div>
                 <h2 className="font-serif text-2xl font-bold text-[#1C1610]">{currentUser.name}</h2>
                 <p className="text-xs text-[#705F4E] font-medium mt-1 font-mono">{currentUser.email}</p>
@@ -278,7 +274,7 @@ function LoginContent() {
                   className="w-full py-3.5 bg-gradient-to-r from-[#1C1610] to-[#AD8A55] hover:brightness-110 text-white text-xs font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2"
                 >
                   <ShieldCheck size={16} />
-                  <span>الدخول للوحة تحكم الإدارة (Admin Dashboard)</span>
+                  <span>الانتقال إلى لوحة تحكم الإدارة (Admin Dashboard)</span>
                 </Link>
               )}
 
@@ -291,6 +287,7 @@ function LoginContent() {
               </Link>
 
               <button
+                type="button"
                 onClick={handleLogout}
                 className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 transition-colors flex items-center justify-center gap-2"
               >
@@ -353,26 +350,51 @@ function LoginContent() {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                <span>المتابعة بحساب Google مباشرة</span>
+                <span>المتابعة بحساب Google</span>
+              </button>
+
+              {/* Facebook 1-Click Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  try {
+                    const fbUser = loginWithFacebook('عميل كنوز عبر Facebook');
+                    setLocalUser(fbUser);
+                    setSuccessMsg('تم تسجيل الدخول عبر Facebook بنجاح! جاري التوجيه...');
+                    setTimeout(() => {
+                      router.push(callbackUrl === '/login' ? '/' : callbackUrl);
+                    }, 600);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full py-3.5 bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 group"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span>المتابعة بحساب Facebook</span>
               </button>
 
               {/* Divider */}
               <div className="relative flex items-center justify-center">
                 <div className="w-full border-t border-gray-200" />
                 <span className="absolute px-3 bg-white text-[11px] text-[#705F4E] font-medium">
-                  أو ببيانات البريد الإلكتروني
+                  أو بالبريد الإلكتروني وكلمة المرور
                 </span>
               </div>
 
               {/* Notifications */}
               {errorMsg && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
                   <AlertCircle size={15} className="flex-shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
               {successMsg && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
                   <CheckCircle2 size={15} className="flex-shrink-0" />
                   <span>{successMsg}</span>
                 </div>
@@ -382,46 +404,17 @@ function LoginContent() {
               {activeTab === 'login' && (
                 <form onSubmit={handleManualLogin} className="space-y-4">
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-[#1C1610]">البريد الإلكتروني (Gmail, GitHub, Outlook...)</label>
-                      {loginEmail && (
-                        <span className={`text-[10px] font-bold flex items-center gap-1 ${isLoginEmailValid ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isLoginEmailValid ? <><Check size={12} /> بريد معتمد</> : 'نطاق غير معتمد (يلزم @gmail.com أو @github.com...)'}
-                        </span>
-                      )}
-                    </div>
-
+                    <label className="block text-xs font-bold text-[#1C1610]">البريد الإلكتروني</label>
                     <div className="relative">
                       <input
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="example@gmail.com أو @github.com"
+                        placeholder="name@example.com"
                         required
-                        className={`w-full pr-10 pl-4 py-3 bg-[#F6F2E9]/40 border rounded-xl text-xs text-[#1C1610] focus:bg-white focus:outline-none transition-all font-mono ${
-                          loginEmail && !isLoginEmailValid
-                            ? 'border-amber-400 focus:border-amber-500'
-                            : loginEmail && isLoginEmailValid
-                            ? 'border-emerald-400 focus:border-emerald-500'
-                            : 'border-[#E2D7C3] focus:border-[#AD8A55]'
-                        }`}
+                        className="w-full pr-10 pl-4 py-3 bg-[#F6F2E9]/40 border border-[#E2D7C3] rounded-xl text-xs text-[#1C1610] focus:bg-white focus:border-[#AD8A55] focus:outline-none transition-all font-mono"
                       />
                       <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#705F4E]" />
-                    </div>
-
-                    {/* Quick Domain Pills */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                      <span className="text-[10px] text-muted">إكمال سريع:</span>
-                      {POPULAR_DOMAINS.map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => applyDomain(d, true)}
-                          className="px-2 py-0.5 bg-[#F6F2E9] hover:bg-[#EFE9DB] text-[#705F4E] hover:text-[#1C1610] text-[10px] font-mono rounded-md border border-[#E2D7C3] transition-colors"
-                        >
-                          {d}
-                        </button>
-                      ))}
                     </div>
                   </div>
 
@@ -441,6 +434,7 @@ function LoginContent() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-[#705F4E] hover:text-[#1C1610]"
+                        aria-label="إظهار / إخفاء كلمة المرور"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -455,12 +449,41 @@ function LoginContent() {
                     {loading ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        <span>جاري التحقق...</span>
+                        <span>جاري التحقق والدخول...</span>
                       </>
                     ) : (
                       <span>تسجيل الدخول</span>
                     )}
                   </button>
+
+                  {/* Quick Preset Credentials (Zero Friction) */}
+                  <div className="pt-2 border-t border-[#E2D7C3]/60 space-y-2">
+                    <span className="text-[10px] text-muted block text-center">دخول سريع بنقرة واحدة (حسابات تجريبية):</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fillCredentials('admin@kounoz.sa', 'admin123')}
+                        className="p-2 rounded-lg bg-[#FAF6EE] hover:bg-[#F3ECE0] border border-[#D4AF37]/40 text-right transition-colors"
+                      >
+                        <span className="text-[10px] font-bold text-noir flex items-center gap-1">
+                          <ShieldCheck size={11} className="text-[#AD8A55]" />
+                          دخول كمدير (Admin)
+                        </span>
+                        <span className="text-[9px] text-muted block font-mono">admin@kounoz.sa</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fillCredentials('customer@kounoz.sa', 'user123')}
+                        className="p-2 rounded-lg bg-[#FAF6EE] hover:bg-[#F3ECE0] border border-[#D4AF37]/40 text-right transition-colors"
+                      >
+                        <span className="text-[10px] font-bold text-noir flex items-center gap-1">
+                          <UserIcon size={11} className="text-[#AD8A55]" />
+                          دخول كعميل (Client)
+                        </span>
+                        <span className="text-[9px] text-muted block font-mono">customer@kounoz.sa</span>
+                      </button>
+                    </div>
+                  </div>
                 </form>
               )}
 
@@ -483,46 +506,17 @@ function LoginContent() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-[#1C1610]">البريد الإلكتروني (Gmail, GitHub, Outlook...)</label>
-                      {regEmail && (
-                        <span className={`text-[10px] font-bold flex items-center gap-1 ${isRegEmailValid ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isRegEmailValid ? <><Check size={12} /> بريد معتمد</> : 'نطاق غير معتمد (يلزم @gmail.com أو @github.com...)'}
-                        </span>
-                      )}
-                    </div>
-
+                    <label className="block text-xs font-bold text-[#1C1610]">البريد الإلكتروني *</label>
                     <div className="relative">
                       <input
                         type="email"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="example@gmail.com أو @github.com"
+                        placeholder="name@example.com"
                         required
-                        className={`w-full pr-10 pl-4 py-3 bg-[#F6F2E9]/40 border rounded-xl text-xs text-[#1C1610] focus:bg-white focus:outline-none transition-all font-mono ${
-                          regEmail && !isRegEmailValid
-                            ? 'border-amber-400 focus:border-amber-500'
-                            : regEmail && isRegEmailValid
-                            ? 'border-emerald-400 focus:border-emerald-500'
-                            : 'border-[#E2D7C3] focus:border-[#AD8A55]'
-                        }`}
+                        className="w-full pr-10 pl-4 py-3 bg-[#F6F2E9]/40 border border-[#E2D7C3] rounded-xl text-xs text-[#1C1610] focus:bg-white focus:border-[#AD8A55] focus:outline-none transition-all font-mono"
                       />
                       <Mail size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#705F4E]" />
-                    </div>
-
-                    {/* Quick Domain Pills */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                      <span className="text-[10px] text-muted">إكمال سريع:</span>
-                      {POPULAR_DOMAINS.map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => applyDomain(d, false)}
-                          className="px-2 py-0.5 bg-[#F6F2E9] hover:bg-[#EFE9DB] text-[#705F4E] hover:text-[#1C1610] text-[10px] font-mono rounded-md border border-[#E2D7C3] transition-colors"
-                        >
-                          {d}
-                        </button>
-                      ))}
                     </div>
                   </div>
 
@@ -549,7 +543,7 @@ function LoginContent() {
                         type={showPassword ? 'text' : 'password'}
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="6 أحرف على الأقل"
+                        placeholder="6 أحرف أو أرقام على الأقل"
                         required
                         className="w-full pr-10 pl-10 py-3 bg-[#F6F2E9]/40 border border-[#E2D7C3] rounded-xl text-xs text-[#1C1610] focus:border-[#AD8A55] focus:bg-white focus:outline-none transition-all font-mono"
                       />
@@ -558,6 +552,7 @@ function LoginContent() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-[#705F4E] hover:text-[#1C1610]"
+                        aria-label="إظهار / إخفاء كلمة المرور"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>

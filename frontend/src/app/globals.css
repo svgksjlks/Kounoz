@@ -8,32 +8,30 @@
    SINGLE SOURCE OF TRUTH — KOUNOZ LUXURY COLOR SYSTEM
    ========================================================================== */
 :root {
-  /* Kounoz Official Palette */
-  --kounoz-camel: #8C6B4F;      /* بني كنوز */
-  --kounoz-gold: #AD8A55;       /* ذهبي كنوز */
-  --kounoz-softgold: #D8C6A3;   /* ذهبي فاتح */
-  --kounoz-deepivory: #EFE9DB;  /* عاجي غامق */
-  --kounoz-ivory: #F6F2E9;      /* عاجي */
+  /* Kounoz Official Palette — Luxury Royal Light Heritage Edition */
+  --kounoz-burgundy: #7A0C28;        /* نبيتي غامق ملكي فاخر */
+  --kounoz-burgundy-hover: #9E193C;  /* نبيتي متألق عند التحويم */
+  --kounoz-burgundy-dark: #5A081D;   /* نبيتي عميق */
 
-  /* Backgrounds */
-  --bg-main: #F6F2E9;           /* عاجي / Ivory */
-  --bg-card: #FFFFFF;           /* Pure white card */
-  --bg-surface: #EFE9DB;        /* عاجي غامق / Deep Ivory */
-  --bg-muted: #D8C6A3;          /* ذهبي فاتح / Soft Gold */
+  /* Backgrounds — خلفيات فاتحة راقية مع ملمس التراث والنسيج */
+  --bg-main: transparent;            /* تترك ملمس الورق والنسيج بالكامل يظهر بانسيابية */
+  --bg-card: rgba(255, 255, 255, 0.92); /* كروت بيضاء فاخرة شبه شفافة تبرز النسيج بنعومة */
+  --bg-surface: #FFFFFF;             /* سطح أبيض ناصع للأزرار والمدخلات */
+  --bg-muted: #F3EBDD;               /* خلفية ثانوية خفيفة */
 
-  /* Text & Foreground */
-  --text-main: #1C1610;         /* Deep Charcoal Kounoz Noir */
-  --text-muted: #705F4E;        /* Kounoz Refined Camel Brown */
-  --text-light: #9B8B7B;        /* Muted Caption */
+  /* Text & Typography — تباين ملكي داكن ومريح للغاية للقراءة */
+  --text-main: #1C1610;              /* أسود/فحمي ملكي داكن للعناوين الرئيسية والوضوح التام */
+  --text-muted: #57534E;             /* رمادي دافئ مريح للنصوص والوصف */
+  --text-light: #78716C;             /* رمادي هادئ للملاحظات */
 
-  /* Luxury Accent */
-  --accent: #AD8A55;            /* ذهبي كنوز / Kounoz Gold */
-  --accent-hover: #8C6B4F;      /* بني كنوز / Kounoz Camel */
-  --accent-light: #EFE9DB;      /* عاجي غامق / Deep Ivory */
+  /* Luxury Burgundy Accent — نبيتي غامق فاخر للمسات البارزة */
+  --accent: #7A0C28;                 /* نبيتي غامق ملكي فاخر */
+  --accent-hover: #9E193C;           /* نبيتي أفتح عند التفاعل والتحويم */
+  --accent-light: rgba(122, 12, 40, 0.08); /* خلفية هادئة نبيتي فاتحة للبادجات */
 
-  /* Borders & Dividers */
-  --border-subtle: #E2D7C3;     /* Subtle Ivory-Gold border */
-  --border-focus: #8C6B4F;      /* Active Kounoz Camel border */
+  /* Borders & Dividers — حدود متناسقة ودافئة */
+  --border-subtle: #E8E0D2;          /* حدود رقيقة هادئة ودافئة */
+  --border-focus: #7A0C28;           /* حدود نبيتي بارزة عند التحديد */
 
   /* Radii */
   --radius-sm: 6px;
@@ -42,12 +40,19 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: #FAF6EE;
+  background-image: 
+    linear-gradient(rgba(250, 246, 238, 0.55), rgba(250, 246, 238, 0.65)),
+    url('/bg-texture.jpg');
+  background-repeat: repeat;
+  background-size: 550px auto;
+  background-attachment: fixed;
   color: var(--text-main);
   font-family: 'IBM Plex Sans Arabic', 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, .font-display {
@@ -74,17 +79,17 @@ h1, h2, h3, h4, .font-display {
 
 /* Minimal subtle scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-main);
+  background: #FAF6EE;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+  background: #D8CEBE;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: #7A0C28;
 }
 
 /* Continuous Marquee Ticker */
@@ -107,4 +112,66 @@ h1, h2, h3, h4, .font-display {
 .animate-ticker:hover {
   animation-play-state: paused;
 }
+
+/* ==========================================================================
+   Google Translate Complete Invisible Integration
+   ========================================================================== */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+iframe[class*="goog-te-banner"],
+iframe[id^=":"]:not([id*="recaptcha"]),
+.VIpgJd-ZVi9I-OR9QNe-OR9QNe,
+.VIpgJd-ZVi9I-OR9QNe,
+.VIpgJd-ZVi9I-aZ2wEe-wOHMyf,
+.VIpgJd-ZVi9I-aZ2wEe-wOHMyf-ti6hGc,
+.VIpgJd-ZVi9I-x3G2nd-G0jgAb,
+.VIpgJd-ZVi9I-x3G2nd,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-te-spinner-pos {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  z-index: -9999 !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+/* Hide any top banner injected directly into body */
+body > .skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+#google_translate_element {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+
 

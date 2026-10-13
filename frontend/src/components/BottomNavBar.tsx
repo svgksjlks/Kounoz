@@ -21,11 +21,13 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { Product, Category, CATEGORIES } from '../types';
-import { getProducts, getAdminUser, isAdminEmail } from '../lib/api';
+import { getProducts, getAdminUser, isAdminEmail, getStoreSettings, formatWhatsAppUrl } from '../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 export function BottomNavBar() {
   const pathname = usePathname();
+  const { dir } = useLanguage();
   const { openCart, totalItems } = useCart();
 
   // Modals state
@@ -37,6 +39,7 @@ export function BottomNavBar() {
   const [selectedSearchCategory, setSelectedSearchCategory] = useState<string>('جميع القطع');
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [storeSettings, setStoreSettings] = useState(() => getStoreSettings());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -46,15 +49,21 @@ export function BottomNavBar() {
       setAllProducts(items);
       const user = getAdminUser();
       setAdminUser(user);
+      setStoreSettings(getStoreSettings());
     }
     loadData();
 
-    // Listen for storage / login updates
+    // Listen for storage / login / settings updates
     const handleUpdate = () => {
       setAdminUser(getAdminUser());
+      setStoreSettings(getStoreSettings());
     };
     window.addEventListener('storage', handleUpdate);
-    return () => window.removeEventListener('storage', handleUpdate);
+    window.addEventListener('kounoz_settings_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('kounoz_settings_updated', handleUpdate);
+    };
   }, []);
 
   // Filter products for Search Modal
@@ -73,17 +82,17 @@ export function BottomNavBar() {
 
   return (
     <>
-      {/* ── Fixed Bottom Navigation Bar ───────────────────────────── */}
+      {/* ── Fixed Bottom Navigation Bar (Mobile & Tablet only) ───── */}
       <div
-        className="fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border-subtle shadow-[0_-8px_30px_rgba(28,22,16,0.08)] transition-all duration-300"
-        dir="rtl"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border-subtle shadow-[0_-8px_30px_rgba(28,22,16,0.08)] transition-all duration-300"
+        dir={dir}
       >
         <div className="max-w-md mx-auto px-4 h-16 sm:h-18 flex items-center justify-around">
           {/* 1. التسوق (Shop / Home) */}
           <Link
             href="/"
             className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-smooth group relative ${
-              isHome && !isSearchOpen && !isAccountOpen ? 'text-[#AD8A55]' : 'text-muted hover:text-noir'
+              isHome && !isSearchOpen && !isAccountOpen ? 'text-accent' : 'text-muted hover:text-noir'
             }`}
           >
             <motion.div whileTap={{ scale: 0.85 }} className="relative flex flex-col items-center">
@@ -97,7 +106,7 @@ export function BottomNavBar() {
                 التسوق
               </span>
               {isHome && !isSearchOpen && !isAccountOpen && (
-                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#AD8A55]" />
+                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-accent" />
               )}
             </motion.div>
           </Link>
@@ -110,7 +119,7 @@ export function BottomNavBar() {
               setIsSearchOpen(true);
             }}
             className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-smooth group relative ${
-              isSearchOpen ? 'text-[#AD8A55]' : 'text-muted hover:text-noir'
+              isSearchOpen ? 'text-accent' : 'text-muted hover:text-noir'
             }`}
             aria-label="البحث في المتجر"
           >
@@ -125,7 +134,7 @@ export function BottomNavBar() {
                 البحث
               </span>
               {isSearchOpen && (
-                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#AD8A55]" />
+                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-accent" />
               )}
             </motion.div>
           </button>
@@ -139,17 +148,17 @@ export function BottomNavBar() {
               openCart();
             }}
             className="flex flex-col items-center justify-center flex-1 py-1 text-center text-muted hover:text-noir transition-smooth group relative"
-            aria-label="حقيبة المشتريات"
+            aria-label="سلة المشتريات"
           >
             <motion.div whileTap={{ scale: 0.85 }} className="relative flex flex-col items-center">
               <div className="relative">
                 <ShoppingBag size={22} className="group-hover:scale-105 transition-transform" />
                 {mounted && totalItems > 0 ? (
-                  <span className="absolute -top-1.5 -right-2 bg-[#1C1610] text-[#F6F2E9] border border-[#AD8A55] text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-scale-in">
+                  <span className="absolute -top-1.5 -right-2 bg-accent text-white border border-border-subtle text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center shadow-xs animate-scale-in">
                     {totalItems}
                   </span>
                 ) : (
-                  <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#AD8A55]/40" />
+                  <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-accent/40" />
                 )}
               </div>
               <span className="text-[10px] sm:text-[11px] font-bold mt-1 tracking-tight">
@@ -166,7 +175,7 @@ export function BottomNavBar() {
               setIsAccountOpen(true);
             }}
             className={`flex flex-col items-center justify-center flex-1 py-1 text-center transition-smooth group relative ${
-              isAccountOpen ? 'text-[#AD8A55]' : 'text-muted hover:text-noir'
+              isAccountOpen ? 'text-accent' : 'text-muted hover:text-noir'
             }`}
             aria-label="حسابي وإدارة المتجر"
           >
@@ -186,7 +195,7 @@ export function BottomNavBar() {
                 {adminUser ? 'الإدارة' : 'حسابي'}
               </span>
               {isAccountOpen && (
-                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#AD8A55]" />
+                <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-accent" />
               )}
             </motion.div>
           </button>
@@ -196,7 +205,7 @@ export function BottomNavBar() {
       {/* ── Search Modal / Quick Search Overlay ───────────────────────── */}
       <AnimatePresence>
         {isSearchOpen && (
-          <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+          <div className="fixed inset-0 z-50 overflow-hidden" dir={dir}>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -224,12 +233,12 @@ export function BottomNavBar() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="ابحث عن جلابية، ثوب، بشت، خامة، أو مقاس..."
-                    className="w-full pl-4 pr-11 py-3 bg-card border border-border-subtle rounded-xl text-xs sm:text-sm text-noir placeholder:text-muted focus:border-[#AD8A55] focus:outline-none shadow-xs"
+                    className="w-full pl-4 pr-11 py-3 bg-card border border-border-subtle rounded-xl text-xs sm:text-sm text-noir placeholder:text-muted focus:border-accent focus:outline-none shadow-xs"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-noir p-1"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted hover:text-slate-100 p-1"
                     >
                       <X size={14} />
                     </button>
@@ -238,7 +247,7 @@ export function BottomNavBar() {
 
                 <button
                   onClick={() => setIsSearchOpen(false)}
-                  className="p-2.5 rounded-xl bg-card border border-border-subtle hover:border-noir text-noir transition-smooth shadow-xs"
+                  className="p-2.5 rounded-xl bg-card border border-border-subtle hover:border-accent text-slate-200 transition-smooth shadow-xs"
                   aria-label="إغلاق البحث"
                 >
                   <X size={18} />
@@ -253,8 +262,8 @@ export function BottomNavBar() {
                     onClick={() => setSelectedSearchCategory(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-smooth ${
                       selectedSearchCategory === cat
-                        ? 'bg-noir text-white shadow-xs'
-                        : 'bg-card text-muted hover:text-noir border border-border-subtle'
+                        ? 'bg-accent text-slate-100 shadow-xs'
+                        : 'bg-card text-muted hover:text-slate-100 border border-border-subtle'
                     }`}
                   >
                     {cat}
@@ -267,7 +276,7 @@ export function BottomNavBar() {
                 {filteredSearchResults.length === 0 ? (
                   <div className="py-12 text-center space-y-2 text-muted">
                     <Search size={32} className="mx-auto stroke-1 opacity-40" />
-                    <p className="text-xs font-semibold text-noir">لم نجد نتائج مطابقة لبحثك</p>
+                    <p className="text-xs font-semibold text-slate-200">لم نجد نتائج مطابقة لبحثك</p>
                     <p className="text-[11px]">جرب البحث باسم قطعة أخرى أو تصفح تشكيلة الأقسام أعلاه</p>
                   </div>
                 ) : (
@@ -291,11 +300,11 @@ export function BottomNavBar() {
                           <span className="text-[10px] text-muted font-medium block">
                             {product.category}
                           </span>
-                          <h4 className="font-bold text-xs text-noir line-clamp-1 group-hover:text-[#AD8A55] transition-smooth">
+                          <h4 className="font-bold text-xs text-slate-200 line-clamp-1 group-hover:text-accent transition-smooth">
                             {product.name}
                           </h4>
                           <div className="flex items-baseline gap-2 mt-1">
-                            <span className="text-xs font-extrabold text-noir">
+                            <span className="text-xs font-extrabold text-slate-100">
                               {product.price} ج.م
                             </span>
                             {product.original_price && (
@@ -305,7 +314,7 @@ export function BottomNavBar() {
                             )}
                           </div>
                         </div>
-                        <ChevronLeft size={16} className="text-muted group-hover:text-noir group-hover:-translate-x-1 transition-transform flex-shrink-0" />
+                        <ChevronLeft size={16} className="text-muted group-hover:text-slate-100 group-hover:-translate-x-1 transition-transform flex-shrink-0" />
                       </Link>
                     ))}
                   </div>
@@ -324,14 +333,14 @@ export function BottomNavBar() {
       {/* ── Account / Profile Modal ───────────────────────────────────── */}
       <AnimatePresence>
         {isAccountOpen && (
-          <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+          <div className="fixed inset-0 z-50 overflow-hidden" dir={dir}>
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAccountOpen(false)}
-              className="absolute inset-0 bg-noir/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
 
             {/* Modal Body */}
@@ -343,23 +352,23 @@ export function BottomNavBar() {
               className="relative max-w-md mx-auto mt-12 sm:mt-24 mx-4 sm:mx-auto bg-card rounded-2xl border border-border-subtle shadow-2xl overflow-hidden z-10"
             >
               {/* Header */}
-              <div className="p-5 border-b border-border-subtle bg-[#1C1610] text-[#F6F2E9] flex items-center justify-between">
+              <div className="p-5 border-b border-border-subtle bg-gradient-to-r from-[#20050D] via-[#4A0A19] to-[#20050D] text-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#AD8A55]/20 border border-[#AD8A55]/40 flex items-center justify-center text-[#D8C6A3]">
+                  <div className="w-10 h-10 rounded-full bg-accent/30 border border-accent/50 flex items-center justify-center text-rose-200">
                     <User size={20} />
                   </div>
                   <div>
-                    <h3 className="font-serif font-bold text-base text-white">
+                    <h3 className="font-serif font-bold text-base text-slate-100">
                       {adminUser ? adminUser.name : 'حساب العميل المميز'}
                     </h3>
-                    <p className="text-[11px] text-[#D8C6A3]">
+                    <p className="text-[11px] text-rose-200/80">
                       {adminUser ? adminUser.email : 'كنوز KOUNOZ — للأصالة والفخامة'}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsAccountOpen(false)}
-                  className="text-[#D8C6A3] hover:text-white p-1"
+                  className="text-slate-300 hover:text-white p-1"
                 >
                   <X size={18} />
                 </button>
@@ -368,84 +377,63 @@ export function BottomNavBar() {
               {/* Body Content */}
               <div className="p-5 space-y-3 text-right">
                 {/* Customer Login / Account Action */}
+                {/* Admin Access Action */}
                 <Link
-                  href="/login"
+                  href="/admin"
                   onClick={() => setIsAccountOpen(false)}
-                  className="flex items-center justify-between p-3.5 bg-[#1C1610] hover:bg-[#AD8A55] rounded-xl text-white transition-smooth group shadow-md"
+                  className="flex items-center justify-between p-3.5 bg-surface hover:bg-surface/80 border border-border-subtle hover:border-[#D4AF37] rounded-xl text-slate-200 transition-smooth group shadow-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-white/10 text-white">
-                      <User size={16} />
+                    <div className="p-2 rounded-lg bg-[#D4AF37]/20 text-[#D4AF37]">
+                      <ShieldCheck size={18} />
                     </div>
                     <div>
-                      <span className="font-bold text-xs text-white block">
-                        تسجيل الدخول / حسابي الشخصي
+                      <span className="font-bold text-xs text-slate-200 block group-hover:text-[#D4AF37] transition-colors">
+                        {adminUser && isAdminEmail(adminUser.email) ? '👑 لوحة تحكم الإدارة (Admin)' : 'دخول إدارة المتجر (Admin Login)'}
                       </span>
-                      <span className="text-[10px] text-[#D8C6A3]">
-                        دخول بـ Google أو البريد وكلمة المرور
+                      <span className="text-[10px] text-muted">
+                        إدارة المنتجات، الأسعار، الصور، والواتساب
                       </span>
                     </div>
                   </div>
-                  <ChevronLeft size={14} className="text-[#D8C6A3] group-hover:-translate-x-1 transition-transform" />
+                  <ChevronLeft size={14} className="text-muted group-hover:text-slate-100 group-hover:-translate-x-1 transition-transform" />
                 </Link>
-
-                {/* Admin Quick Action (Only for authorized admin) */}
-                {adminUser && isAdminEmail(adminUser.email) && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsAccountOpen(false)}
-                    className="flex items-center justify-between p-3.5 bg-surface hover:bg-[#EFE9DB] rounded-xl border border-border-subtle transition-smooth group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-noir text-white">
-                        <ShieldCheck size={16} className="text-[#AD8A55]" />
-                      </div>
-                      <div>
-                        <span className="font-bold text-xs text-noir block group-hover:text-[#AD8A55] transition-smooth">
-                          لوحة تحكم الإدارة (Admin Dashboard)
-                        </span>
-                        <span className="text-[10px] text-muted">
-                          إدارة المنتجات، الصور، ورقم الواتساب
-                        </span>
-                      </div>
-                    </div>
-                    <ExternalLink size={14} className="text-muted group-hover:text-noir transition-smooth" />
-                  </Link>
-                )}
 
                 {/* Direct Concierge Support */}
                 <a
-                  href="https://wa.me/201000943197?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D9%8B%D8%8C%20%D8%A3%D9%88%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%B7%D9%84%D8%A8%D9%8A"
+                  href={formatWhatsAppUrl(storeSettings.whatsapp_number || '01022822123', 'مرحباً، أود الاستفسار عن طلبي')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3.5 bg-emerald-50 hover:bg-emerald-100/70 rounded-xl border border-emerald-200 transition-smooth group"
+                  className="flex items-center justify-between p-3.5 bg-emerald-950/40 hover:bg-emerald-950/60 rounded-xl border border-emerald-800/40 transition-smooth group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-emerald-700 text-white">
                       <Phone size={16} />
                     </div>
                     <div>
-                      <span className="font-bold text-xs text-emerald-900 block">
+                      <span className="font-bold text-xs text-emerald-300 block">
                         خدمة العملاء والطلب الفوري
                       </span>
-                      <span className="text-[10px] text-emerald-700">
+                      <span className="text-[10px] text-emerald-400">
                         محادثة واتساب مباشرة مع مستشار الأزياء
                       </span>
                     </div>
                   </div>
-                  <ChevronLeft size={14} className="text-emerald-700 group-hover:-translate-x-1 transition-transform" />
+                  <ChevronLeft size={14} className="text-emerald-400 group-hover:-translate-x-1 transition-transform" />
                 </a>
 
                 {/* Email Support */}
                 <a
-                  href="mailto:omargamil37@gmail.com"
+                  href={`mailto:${storeSettings.store_email || 'Kounozthobe@gmail.com'}`}
                   className="flex items-center justify-between p-3 bg-card hover:bg-surface rounded-xl border border-border-subtle text-xs text-muted transition-smooth"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Mail size={15} className="text-[#AD8A55]" />
-                    <span className="font-medium text-noir">البريد الإلكتروني للتواصل:</span>
+                    <Mail size={15} className="text-accent" />
+                    <span className="font-medium text-slate-200">البريد الإلكتروني للتواصل:</span>
                   </div>
-                  <span className="font-mono text-[11px] text-muted">omargamil37@gmail.com</span>
+                  <span className="font-mono text-[11px] text-muted">
+                    {storeSettings.store_email || 'Kounozthobe@gmail.com'}
+                  </span>
                 </a>
               </div>
 
@@ -454,7 +442,7 @@ export function BottomNavBar() {
                 <button
                   type="button"
                   onClick={() => setIsAccountOpen(false)}
-                  className="w-full py-2.5 bg-noir hover:bg-[#AD8A55] text-white text-xs font-bold rounded-xl transition-smooth shadow-xs"
+                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-slate-100 text-xs font-bold rounded-xl transition-smooth shadow-md shadow-accent/25"
                 >
                   العودة للتسوق
                 </button>

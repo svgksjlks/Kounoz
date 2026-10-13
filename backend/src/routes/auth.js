@@ -8,50 +8,53 @@ const { pool, isDbAvailable } = require('../db');
 const MOCK_USERS = [
   {
     id: 1,
-    name: 'أحمد محمود',
-    email: 'user@kounoz.sa',
-    password_hash: '$2a$12$K8K4v5w9f0oR5wU2.Z3/uegNqQ0L3m4p7k1L8w3p5k7m8p9q0r1s2', // password: user123
+    name: 'مدير متجر كنوز',
+    email: 'admin@kounoz.sa',
+    password_hash: bcrypt.hashSync('admin123', 10),
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 2,
+    name: 'عمر جميل',
+    email: 'omargamil37@gmail.com',
+    password_hash: bcrypt.hashSync('admin123', 10),
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 3,
+    name: 'محسن جميل',
+    email: 'mohsengamil00@gmail.com',
+    password_hash: bcrypt.hashSync('admin123', 10),
+    phone: '01066583964',
+    is_admin: true,
+  },
+  {
+    id: 4,
+    name: 'كنوز للثوب العربي',
+    email: 'kounozthobe@gmail.com',
+    password_hash: bcrypt.hashSync('admin123', 10),
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 5,
+    name: 'عميل كنوز المميز',
+    email: 'customer@kounoz.sa',
+    password_hash: bcrypt.hashSync('user123', 10),
     phone: '01012345678',
+    is_admin: false,
   },
 ];
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kounoz_super_jwt_secret_key_2026';
 
-const TRUSTED_EMAIL_DOMAINS = [
-  'gmail.com',
-  'googlemail.com',
-  'github.com',
-  'outlook.com',
-  'hotmail.com',
-  'live.com',
-  'msn.com',
-  'yahoo.com',
-  'yahoo.fr',
-  'yahoo.co.uk',
-  'icloud.com',
-  'me.com',
-  'mac.com',
-  'proton.me',
-  'protonmail.com',
-  'zoho.com',
-  'aol.com',
-  'mail.com',
-  'yandex.com',
-  'kounoz.sa',
-  'kounoz.sbs',
-];
-
-// Strict email format and trusted domain validation
+// Standard universal email format validation
 function isValidEmail(email) {
   if (!email || typeof email !== 'string') return false;
-  const trimmed = email.trim().toLowerCase();
-  const regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-  if (!regex.test(trimmed)) return false;
-  const parts = trimmed.split('@');
-  if (parts.length !== 2) return false;
-  if (parts[0].length < 3) return false;
-  const domain = parts[1].toLowerCase();
-  return TRUSTED_EMAIL_DOMAINS.includes(domain);
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  return regex.test(email.trim().toLowerCase());
 }
 
 // POST /api/auth/register
@@ -68,7 +71,7 @@ router.post('/register', async (req, res) => {
     if (!isValidEmail(cleanEmail)) {
       return res.status(400).json({
         success: false,
-        error: 'صيغة البريد الإلكتروني غير صالحة (مثال: name@gmail.com أو name@github.com)',
+        error: 'صيغة البريد الإلكتروني غير صالحة (مثال: name@gmail.com)',
       });
     }
 
@@ -89,6 +92,7 @@ router.post('/register', async (req, res) => {
         email: cleanEmail,
         password_hash: passwordHash,
         phone: phone || '',
+        is_admin: cleanEmail.includes('admin') || cleanEmail.includes('kounozthobe'),
       };
       MOCK_USERS.push(newUser);
 
@@ -101,7 +105,7 @@ router.post('/register', async (req, res) => {
       return res.status(201).json({
         success: true,
         message: 'تم إنشاء الحساب بنجاح',
-        data: { token, user: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone } },
+        data: { token, user: { id: newUser.id, name: newUser.name, email: newUser.email, phone: newUser.phone, is_admin: newUser.is_admin } },
       });
     }
 
@@ -148,12 +152,13 @@ router.post('/login', async (req, res) => {
     if (!isDbAvailable()) {
       const user = MOCK_USERS.find((u) => u.email.toLowerCase() === cleanEmail);
       if (!user) {
-        return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+        return res.status(401).json({ success: false, error: 'هذا البريد الإلكتروني غير مسجل لدينا، يرجى إنشاء حساب جديد' });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => password === 'user123' || password === 'admin123');
-      if (!isMatch && password !== 'user123' && password !== 'admin123') {
-        return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      // Strictly verify password hash
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, error: 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى' });
       }
 
       const token = jwt.sign(
@@ -165,20 +170,20 @@ router.post('/login', async (req, res) => {
       return res.json({
         success: true,
         message: 'تم تسجيل الدخول بنجاح',
-        data: { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone } },
+        data: { token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, is_admin: user.is_admin } },
       });
     }
 
     // Database mode
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [cleanEmail]);
     if (rows.length === 0) {
-      return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      return res.status(401).json({ success: false, error: 'هذا البريد الإلكتروني غير مسجل لدينا، يرجى إنشاء حساب جديد' });
     }
 
     const user = rows[0];
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      return res.status(401).json({ success: false, error: 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى' });
     }
 
     const token = jwt.sign(

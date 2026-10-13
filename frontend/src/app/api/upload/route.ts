@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
               folder: 'kounoz_products',
-              resource_type: 'image',
+              resource_type: 'auto',
             },
             (error, result) => {
               if (error || !result) {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: 'kounoz_products',
-          resource_type: 'image',
+          resource_type: 'auto',
         },
         (error, result) => {
           if (error || !result) {

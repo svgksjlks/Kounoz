@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getHeroImages, getHeroBadge } from '../lib/api';
+import { getHeroImages, getHeroBadge, getHeroVideo, DEFAULT_HERO_VIDEO } from '../lib/api';
 
 const DEFAULT_IMAGE = '/products/1/1.png';
 
@@ -20,6 +20,7 @@ export function HeroSection() {
   ]);
   const [badge, setBadge]             = useState({ name: 'جلابية كنوز الملكية', material: 'قطن مصري 100% نقي' });
   const [activeIdx, setActiveIdx]     = useState(0);
+  const [videoUrl, setVideoUrl]       = useState(DEFAULT_HERO_VIDEO);
 
   useEffect(() => {
     setMounted(true);
@@ -28,12 +29,16 @@ export function HeroSection() {
     if (savedImages?.length) setImages(savedImages);
     const savedBadge = getHeroBadge();
     if (savedBadge) setBadge(savedBadge);
+    const savedVideo = getHeroVideo();
+    if (savedVideo) setVideoUrl(savedVideo);
 
     const handleUpdate = () => {
       const imgs = getHeroImages();
       if (imgs?.length) setImages(imgs);
       const b = getHeroBadge();
       if (b) setBadge(b);
+      const v = getHeroVideo();
+      if (v) setVideoUrl(v);
       setActiveIdx(0);
     };
     window.addEventListener('kounoz_hero_updated', handleUpdate);
@@ -96,7 +101,7 @@ export function HeroSection() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="#collection"
-                className="px-9 py-4 bg-noir text-white text-xs font-bold rounded-md hover:bg-accent transition-smooth shadow-sm flex items-center gap-2.5"
+                className="px-9 py-4 bg-accent text-white text-xs font-bold rounded-md hover:bg-accent-hover transition-smooth shadow-lg shadow-accent/30 border border-accent-hover/40 flex items-center gap-2.5"
               >
                 اكتشف المجموعة
                 <ArrowDown size={14} />
@@ -105,7 +110,7 @@ export function HeroSection() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="#collection"
-                className="px-9 py-4 bg-card border border-border-subtle text-noir text-xs font-bold rounded-md hover:border-noir hover:bg-surface transition-smooth shadow-sm flex items-center gap-2"
+                className="px-9 py-4 bg-card border border-border-subtle text-noir text-xs font-bold rounded-md hover:border-accent hover:text-accent hover:bg-surface transition-smooth shadow-sm flex items-center gap-2"
               >
                 <Sparkles size={13} className="text-accent" />
                 وصل حديثًا
@@ -114,92 +119,47 @@ export function HeroSection() {
           </motion.div>
         </motion.div>
 
-        {/* ── Left: 4-Image Gallery ── */}
+        {/* ── Left: Luxury Video Showcase (Loop + Autoplay) ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
           className="lg:col-span-5 flex flex-col gap-3"
         >
-          {/* Main image frame */}
-          <div className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border-subtle bg-surface shadow-xl">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={mainImage}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.35 }}
-                className="absolute inset-0"
-              >
-                <Image
-                  src={mainImage}
-                  alt="جلابية عربية فاخرة مطرزة"
-                  fill
-                  priority
-                  unoptimized={mainImage.startsWith('data:')}
-                  className="object-cover object-top hover:scale-105 transition-transform duration-1000 ease-out"
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                />
-              </motion.div>
-            </AnimatePresence>
+          {/* Main Video Frame */}
+          <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-border-subtle bg-surface shadow-2xl group">
+            <video
+              key={mounted ? videoUrl : 'default-hero'}
+              src={mounted ? videoUrl : DEFAULT_HERO_VIDEO}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-1000 ease-out"
+            />
 
             {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-noir/40 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
-            {/* Floating badge */}
-            <div className="absolute bottom-5 right-5 left-5 p-4 rounded-xl bg-[#141416]/90 backdrop-blur-md border border-white/20 flex items-center justify-between text-white shadow-2xl">
+            {/* Floating Bottom Card */}
+            <div className="absolute bottom-5 right-5 left-5 p-4 rounded-xl bg-card/95 backdrop-blur-md border border-border-subtle flex items-center justify-between text-noir shadow-2xl z-10">
               <div className="flex flex-col text-right">
-                <span className="text-xs sm:text-sm font-bold text-white tracking-wide">{mounted ? badge.name : 'جلابية كنوز الملكية'}</span>
-                <span className="text-[11px] text-[#D8C6A3] font-medium">{mounted ? badge.material : 'قطن مصري 100% نقي'}</span>
+                <span className="text-xs sm:text-sm font-bold text-noir tracking-wide">
+                  {mounted ? badge.name : 'جلابية كنوز الملكية'}
+                </span>
+                <span className="text-[11px] text-muted font-medium">
+                  {mounted ? badge.material : 'قطن مصري 100% نقي'}
+                </span>
               </div>
               <Link
                 href="/products/1"
-                className="px-4 py-2 rounded-lg bg-[#AD8A55] hover:bg-[#8C6B4F] text-white text-xs font-bold transition-all shadow-md"
+                className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-xs font-bold transition-all shadow-md shadow-accent/20"
               >
                 عرض التفاصيل
               </Link>
             </div>
           </div>
-
-          {/* Thumbnails row — only show if there are ≥ 2 filled images */}
-          {mounted && filledImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-2">
-              {[0, 1, 2, 3].map((idx) => {
-                const url = images[idx] || '';
-                const isActive = activeIdx === idx;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    disabled={!url}
-                    onClick={() => url && setActiveIdx(idx)}
-                    className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                      !url
-                        ? 'border-border-subtle opacity-25 cursor-default bg-surface'
-                        : isActive
-                        ? 'border-accent ring-2 ring-accent/40 scale-105 shadow-sm'
-                        : 'border-border-subtle opacity-70 hover:opacity-100 hover:border-noir'
-                    }`}
-                  >
-                    {url ? (
-                      <Image
-                        src={url}
-                        alt={`زاوية ${idx + 1}`}
-                        fill
-                        unoptimized={url.startsWith('data:')}
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted text-[10px] font-bold">
-                        {idx + 1}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </motion.div>
       </div>
     </section>

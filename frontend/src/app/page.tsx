@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
+import { HeroBannerSlider } from '../components/HeroBannerSlider';
 import { HeroSection } from '../components/HeroSection';
 import { ProductCard } from '../components/ProductCard';
 import { QuickViewModal } from '../components/QuickViewModal';
@@ -10,31 +11,33 @@ import { getProducts } from '../lib/api';
 import { Sparkles, Layers, ShieldCheck, Feather, Truck, Award } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function HomePage() {
+  const { dir } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string>('جميع القطع');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
+    async function loadData(isInitial = false) {
+      if (isInitial) setLoading(true);
       const data = await getProducts(selectedCategory);
       setProducts(data);
       setLoading(false);
     }
-    loadData();
+    loadData(products.length === 0);
 
     const handleUpdate = () => {
-      loadData();
+      loadData(false);
     };
     window.addEventListener('kounoz_products_updated', handleUpdate);
     return () => window.removeEventListener('kounoz_products_updated', handleUpdate);
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-main" dir="rtl">
+    <div className="min-h-screen bg-main" dir={dir}>
       {/* Navbar */}
       <Navbar
         activeCategory={selectedCategory}
@@ -42,7 +45,10 @@ export default function HomePage() {
       />
 
       <main>
-        {/* Grand Luxury Hero Section */}
+        {/* Luxury Promotional Banners Slider (قبل جزئية الفيديو) */}
+        <HeroBannerSlider />
+
+        {/* Grand Luxury Hero Section (جزئية الفيديو التعريفي) */}
         <HeroSection />
 
         {/* Brand Value Pillars */}
@@ -63,8 +69,8 @@ export default function HomePage() {
                 <Award size={18} />
               </div>
               <div>
-                <h4 className="font-bold text-xs sm:text-sm text-noir">خياطة يدوية دقيقة</h4>
-                <p className="text-[10px] sm:text-[11px] text-muted">تطريز تراثي متقن</p>
+                <h4 className="font-bold text-xs sm:text-sm text-noir">تصاميم مميزه</h4>
+                <p className="text-[10px] sm:text-[11px] text-muted"> تشكيله كبيره</p>
               </div>
             </div>
 
@@ -104,16 +110,15 @@ export default function HomePage() {
 
             {/* Category Filter Pills (Horizontal scroll on small mobile) */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
-              {CATEGORIES.map((cat) => (
+              {['جميع القطع', 'تخفيضات', 'وصل حديثاً', 'كولكشن الشتوي', 'كولكشن الصيفي'].map((cat) => (
                 <motion.button
                   key={cat}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-md text-xs font-semibold tracking-wide transition-smooth whitespace-nowrap ${
-                    selectedCategory === cat
-                      ? 'bg-noir text-white shadow-sm'
-                      : 'bg-card text-muted border border-border-subtle hover:text-noir hover:border-noir hover:bg-surface'
-                  }`}
+                  className={`px-4 py-2 sm:px-5 sm:py-2.5 rounded-md text-xs font-semibold tracking-wide transition-smooth whitespace-nowrap ${selectedCategory === cat
+                    ? 'bg-accent text-gray-200 shadow-md shadow-accent/30 border border-accent-hover/50'
+                    : 'bg-card text-muted border border-border-subtle hover:text-noir hover:border-accent hover:bg-surface'
+                    }`}
                 >
                   {cat}
                 </motion.button>
@@ -137,8 +142,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <motion.div
-              layout
+            <div
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6 lg:gap-8"
             >
               <AnimatePresence mode="popLayout">
@@ -150,32 +154,32 @@ export default function HomePage() {
                   />
                 ))}
               </AnimatePresence>
-            </motion.div>
+            </div>
           )}
 
-          {/* Luxury Editorial Heritage Banner */}
+          {/* Luxury Editorial Heritage Banner — لوحة بانل نبيتي فاخرة */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-20 sm:mt-28 p-8 sm:p-14 rounded-xl bg-noir text-main relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 border border-noir shadow-lg"
+            className="mt-20 sm:mt-28 p-8 sm:p-14 rounded-xl bg-gradient-to-r from-[#5A081D] via-[#7A0C28] to-[#5A081D] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-12 border border-[#9E193C]/40 shadow-2xl"
           >
             <div className="space-y-4 max-w-xl z-10 text-right">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 text-xs text-white font-semibold tracking-wide">
-                <Sparkles size={13} className="text-accent" />
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/15 border border-white/30 text-xs text-rose-100 font-semibold tracking-wide">
+                <Sparkles size={13} className="text-amber-300" />
                 حرفية وخياطة متوارثة
               </span>
               <h3 className="font-serif text-2xl sm:text-4xl font-bold text-white leading-tight">
                 فخامة التطريز اليدوي والأقمشة الطبيعية الأصيلة
               </h3>
-              <p className="text-lighttext text-xs sm:text-sm leading-relaxed font-normal">
+              <p className="text-rose-100/90 text-xs sm:text-sm leading-relaxed font-normal">
                 نختار بعناية فائقة أنقى خامات القطن والكتان وصوف الجوخ، ونحيكها بأيدي أمهر الحرفيين لنقدم لك قطعاً تليق بأرقى المناسبات وتعكس وقار الرجل العربي.
               </p>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Link
                   href="#collection"
-                  className="inline-block px-7 py-3.5 bg-card text-noir text-xs font-bold rounded-md hover:bg-accent hover:text-white transition-smooth shadow-sm"
+                  className="inline-block px-7 py-3.5 bg-white text-[#7A0C28] hover:bg-rose-50 text-xs font-bold rounded-md shadow-lg transition-smooth"
                 >
                   استعراض التشكيلة كاملة
                 </Link>
@@ -183,26 +187,77 @@ export default function HomePage() {
             </div>
 
             <div className="w-full md:w-auto flex items-center justify-center">
-              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-dashed border-white/20 flex items-center justify-center">
-                <Layers size={42} className="text-accent stroke-1" />
+              <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-dashed border-white/30 flex items-center justify-center bg-white/10">
+                <Layers size={42} className="text-white stroke-1" />
               </div>
             </div>
           </motion.div>
         </section>
 
-        {/* About & Heritage Section */}
-        <section id="about" className="py-20 sm:py-24 bg-card border-t border-border-subtle">
-          <div className="max-w-5xl mx-auto px-6 sm:px-10 text-center space-y-6 sm:space-y-8">
-            <span className="text-xs uppercase tracking-widest text-accent font-bold">
-              قصة كنوز KOUNOZ
-            </span>
-            <h2 className="font-serif text-3xl sm:text-5xl text-noir font-bold leading-tight">
-              أصالة الماضي بدقة الحاضر
-            </h2>
-            <p className="text-muted text-xs sm:text-base leading-relaxed max-w-2xl mx-auto font-normal">
-              تأسست علامة كنوز KOUNOZ لتكون المرجع الأول للرجل العربي الباحث عن التميز والوقار.
-              نجمع بين براعة الخياطة التراثية وأفخر الأقمشة الطبيعية، لنقدم لك قطعاً خالدة تدوم لأجيال.
-            </p>
+        {/* About & Heritage Section — كنوز للثوب العربي */}
+        <section id="about" className="py-20 sm:py-28 bg-card/85 backdrop-blur-md border-t border-border-subtle relative overflow-hidden">
+          {/* Subtle burgundy ambient glow */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#7A0C28]/8 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#7A0C28]/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="max-w-5xl mx-auto px-6 sm:px-10 text-right space-y-8 relative z-10">
+            <div className="text-center space-y-3">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent/20 border border-accent/40 text-rose-300 text-xs font-bold tracking-wider">
+                <Sparkles size={12} />
+                أكثر من 20 عاماً من الخبرة
+              </span>
+              <h2 className="font-serif text-3xl sm:text-5xl text-noir font-bold leading-tight">
+                كنوز للثوب العربي
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+              <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border-subtle space-y-4 shadow-xl">
+                <h3 className="text-base font-bold text-noir flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-accent" />
+                  أناقة عربية بروح عصرية
+                </h3>
+                <p className="text-muted text-xs sm:text-sm leading-relaxed font-normal">
+                  كنوز علامة متخصصة في صناعة الثوب العربي، تستند إلى خبرة تمتد لأكثر من 20 عامًا في عالم الأقمشة والتفصيل وصناعة الأثواب، حيث تجتمع الخبرة الطويلة مع الاهتمام بأدق التفاصيل لتقديم ثوب يعكس الأناقة العربية بروح عصرية.
+                </p>
+                <p className="text-muted text-xs sm:text-sm leading-relaxed font-normal">
+                  نؤمن في كنوز بأن الثوب ليس مجرد لباس، بل هو تعبير عن الهوية والذوق والحضور. لذلك نحرص على اختيار الأقمشة بعناية، ودقة القصّ والتفصيل، وجودة الخياطة والتشطيب، مع تطوير تصاميم تجمع بين أصالة الثوب العربي وأناقة التصميم الحديث.
+                </p>
+              </div>
+
+              <div className="p-6 sm:p-8 rounded-2xl bg-card border border-border-subtle space-y-4 shadow-xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <h3 className="text-base font-bold text-noir flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-accent" />
+                    خبرة عالمية متعددة الأسواق
+                  </h3>
+                  <p className="text-muted text-xs sm:text-sm leading-relaxed font-normal">
+                    على مدار أكثر من عقدين، اكتسبنا خبرة واسعة في فهم احتياجات عملائنا واختلاف الأذواق والأسواق، وهو ما نترجمه اليوم في كل قطعة تحمل اسم كنوز.
+                  </p>
+                </div>
+
+                {/* Countries tags */}
+                <div className="p-4 rounded-xl bg-surface/80 border border-border-subtle space-y-2">
+                  <p className="text-xs font-bold text-noir">
+                    كنوز — أكثر من 20 عامًا من الخبرة في:
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1 rounded-md bg-accent/25 border border-accent/40 text-rose-200 text-xs font-bold">
+                      🇨🇳 الصين
+                    </span>
+                    <span className="px-3 py-1 rounded-md bg-accent/25 border border-accent/40 text-rose-200 text-xs font-bold">
+                      🇹🇷 تركيا
+                    </span>
+                    <span className="px-3 py-1 rounded-md bg-accent/25 border border-accent/40 text-rose-200 text-xs font-bold">
+                      🇪🇬 مصر
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-rose-300/80 pt-1 font-medium">
+                    نصنع فيها الأناقة ونحافظ على الأصالة.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

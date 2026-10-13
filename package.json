@@ -1,0 +1,18 @@
+{
+  "name": "clothing-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start-system.js",
+    "start:all": "node scripts/start-system.js",
+    "start:frontend": "npm --prefix frontend start",
+    "start:backend": "npm --prefix backend start",
+    "dev": "node scripts/dev-system.js",
+    "dev:all": "node scripts/dev-system.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "stop": "node scripts/stop-system.js"
+  }
+}

@@ -23,6 +23,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { getStoreSettings, formatWhatsAppUrl, getCurrentCustomer, isValidEmail } from '../../lib/api';
 
 // ─── Country List ────────────────────────────────────────────────────────────
@@ -86,6 +87,7 @@ function InputField({ label, fieldKey, type = 'text', placeholder, half = false,
 
 // ─── Page Component ───────────────────────────────────────────────────────────
 export default function CheckoutPage() {
+  const { dir } = useLanguage();
   const { items, totalAmount, clearCart, isCartLoaded } = useCart();
   const router = useRouter();
   const [step, setStep] = useState<Step>('info');
@@ -179,7 +181,7 @@ ${itemsList}
 
 شكراً لاختياركم كنوز! ✨`;
 
-    const waUrl = formatWhatsAppUrl(settings.whatsapp_number || '201000943197', msg);
+    const waUrl = formatWhatsAppUrl(settings.whatsapp_number || '01022822123', msg);
 
     clearCart();
     setOrderDone(true);
@@ -231,7 +233,7 @@ ${itemsList}
 
   if (mounted && !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex flex-col justify-between" dir="rtl">
+      <div className="min-h-screen bg-[#FAF8F5] flex flex-col justify-between" dir={dir}>
         <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#1C1C1E] transition-all">
@@ -239,8 +241,8 @@ ${itemsList}
               <span>العودة للمتجر</span>
             </Link>
             <div className="flex items-center gap-2">
-              <div className="relative w-8 h-8">
-                <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" />
+              <div className="relative w-9 h-9 rounded-full bg-[#FAF6EE] p-1 border border-[#D4AF37]/50 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+                <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain p-0.5" />
               </div>
               <span className="font-serif text-lg font-bold text-[#1C1C1E]">إتمام الطلب</span>
             </div>
@@ -301,7 +303,7 @@ ${itemsList}
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5]" dir="rtl">
+    <div className="min-h-screen bg-[#FAF8F5]" dir={dir}>
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -310,8 +312,8 @@ ${itemsList}
             <span>العودة للمتجر</span>
           </Link>
           <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8">
-              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain" />
+            <div className="relative w-9 h-9 rounded-full bg-[#FAF6EE] p-1 border border-[#D4AF37]/50 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+              <Image src="/kounoz-logo.png" alt="كنوز" fill className="object-contain p-0.5" />
             </div>
             <span className="font-serif text-lg font-bold text-[#1C1C1E]">إتمام الطلب</span>
           </div>

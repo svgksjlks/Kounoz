@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { CartProvider } from '../context/CartContext';
+import { LanguageProvider } from '../context/LanguageContext';
 import { CartDrawer } from '../components/CartDrawer';
 import { Footer } from '../components/Footer';
 import { WhatsAppButton } from '../components/WhatsAppButton';
@@ -19,17 +21,42 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
-      <body className="antialiased min-h-screen flex flex-col justify-between font-sans bg-[#FAF8F5] text-[#1C1C1E] pb-16 sm:pb-20" suppressHydrationWarning>
+      <body className="antialiased min-h-screen flex flex-col justify-between font-sans bg-main text-noir pb-16 sm:pb-20 lg:pb-0" suppressHydrationWarning>
+        <div id="google_translate_element" style={{ display: 'none' }} aria-hidden="true" />
+        <Script
+          id="google-translate-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.googleTranslateElementInit = function() {
+                if (window.google && window.google.translate) {
+                  new window.google.translate.TranslateElement({
+                    pageLanguage: 'ar',
+                    includedLanguages: 'ar,en',
+                    autoDisplay: false
+                  }, 'google_translate_element');
+                }
+              };
+            `,
+          }}
+        />
+        <Script
+          id="google-translate-script"
+          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+          strategy="afterInteractive"
+        />
         <SessionWrapper>
-          <CartProvider>
-            <div className="flex-1">
-              {children}
-            </div>
-            <CartDrawer />
-            <WhatsAppButton />
-            <BottomNavBar />
-            <Footer />
-          </CartProvider>
+          <LanguageProvider>
+            <CartProvider>
+              <div className="flex-1">
+                {children}
+              </div>
+              <CartDrawer />
+              <WhatsAppButton />
+              <BottomNavBar />
+              <Footer />
+            </CartProvider>
+          </LanguageProvider>
         </SessionWrapper>
       </body>
     </html>

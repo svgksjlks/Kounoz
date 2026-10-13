@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { X, ShoppingBag, Check, ArrowLeft, Eye, MessageCircle, Ruler } from 'lucide-react';
 import { Product, Color } from '../types';
 import { useCart } from '../context/CartContext';
-import { formatWhatsAppUrl, getWhatsAppNumber } from '../lib/api';
+import { formatWhatsAppUrl, getWhatsAppNumber, getColorShapes } from '../lib/api';
 import { ProductSizeGuide } from './ProductSizeGuide';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -17,6 +18,7 @@ interface QuickViewModalProps {
 }
 
 export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
+  const { dir } = useLanguage();
   const { addItem } = useCart();
   const [selectedColor, setSelectedColor] = useState<Color | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -24,14 +26,17 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [addedToast, setAddedToast] = useState(false);
 
-  // 4 shape labels
-  const shapeLabels = ['المنظر الأمامي', 'المنظر الخلفي', 'زاوية القَصّة والجانب', 'تفاصيل النسيج والخياطة'];
+  // 5 shape labels
+  const shapeLabels = [
+    'المنظر الأمامي',
+    'المنظر الخلفي',
+    'زاوية القَصّة والجانب',
+    'تفاصيل النسيج والخياطة',
+    'باكدجينج كنوز الفاخر (تستلمها هكذا)',
+  ];
 
-  const allShapes = product ? (
-    (product.images && product.images.length > 0)
-      ? product.images
-      : [product.image_url, product.secondary_image_url].filter(Boolean) as string[]
-  ) : [];
+  // Guaranteed consistent 4 angles for the active selected color
+  const allShapes = getColorShapes(product, selectedColor);
 
   useEffect(() => {
     if (product) {
@@ -97,7 +102,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6" dir="rtl">
+      <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6" dir={dir}>
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -128,8 +133,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
           <div className="grid grid-cols-1 md:grid-cols-12 max-h-[85vh] overflow-y-auto">
             {/* Right Side: High Quality Product Photo Stage with 4-Shape 1-Click Thumbnails (6 cols) */}
             <div className="md:col-span-6 bg-surface p-6 flex flex-col justify-between space-y-4 border-b md:border-b-0 md:border-l border-border-subtle">
-              {/* Main Photo Viewer Container */}
-              <div className="relative h-[320px] sm:h-[380px] w-full rounded-md overflow-hidden bg-main border border-border-subtle shadow-sm">
+              {/* Main Photo Viewer Container - Vertical Frame */}
+              <div className="relative aspect-[3/4] sm:aspect-[2/3] max-h-[480px] w-full rounded-md overflow-hidden bg-main border border-border-subtle shadow-sm">
                 <Image
                   src={currentMainPhoto}
                   alt={product.name}
@@ -144,28 +149,30 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 </div>
               </div>
 
-              {/* 4 Shapes One-Click Switcher Bar */}
+              {/* 5 Shapes/Details One-Click Switcher Bar */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-noir flex items-center gap-1.5">
                   <Eye size={12} className="text-accent" />
-                  معاينة زوايا وأشكال القطعة (4 أشكال بنقرة واحدة):
+                  معاينة زوايا وتفاصيل القطعة والباكدج (5 صور):
                 </span>
-                <div className="grid grid-cols-4 gap-2">
-                  {allShapes.slice(0, 4).map((shapeUrl, idx) => (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {allShapes.slice(0, 5).map((shapeUrl, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setActiveImageIndex(idx)}
+                      onClick={() => {
+                        setActiveImageIndex(idx);
+                      }}
                       className={`relative aspect-square rounded-md overflow-hidden border transition-all ${
                         activeImageIndex === idx
                           ? 'border-accent ring-2 ring-accent ring-offset-1 shadow-md scale-105'
                           : 'border-border-subtle opacity-70 hover:opacity-100 hover:border-noir'
                       }`}
                     >
-                      <Image src={shapeUrl} alt={shapeLabels[idx] || `شكل ${idx + 1}`} fill className="object-cover" />
+                      <Image src={shapeUrl} alt={shapeLabels[idx] || `صورة ${idx + 1}`} fill className="object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                      <span className="absolute bottom-0 inset-x-0 text-white text-[9px] sm:text-[10px] font-bold py-1 text-center truncate px-0.5 z-10 drop-shadow-md">
-                        {['أمامي', 'خلفي', 'جانبي', 'نسيج'][idx] || `شكل ${idx + 1}`}
+                      <span className="absolute bottom-0 inset-x-0 text-white text-[9px] font-bold py-1 text-center truncate px-0.5 z-10 drop-shadow-md">
+                        {['أمامي', 'خلفي', 'جانبي', 'نسيج', 'الباكدج'][idx] || `شكل ${idx + 1}`}
                       </span>
                     </button>
                   ))}
@@ -188,7 +195,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 <div className="flex items-center justify-between text-xs text-muted">
                   <span className="font-semibold text-accent">{product.category}</span>
                   {discountPercent && (
-                    <span className="bg-noir text-white px-2 py-0.5 rounded text-[10px] font-bold">
+                    <span className="bg-accent text-slate-100 px-2 py-0.5 rounded text-[10px] font-bold">
                       خصم {discountPercent}%
                     </span>
                   )}
@@ -228,8 +235,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                           onClick={() => setSelectedColor(c)}
                           className={`w-6 h-6 rounded-full transition-smooth flex items-center justify-center ${
                             selectedColor?.name === c.name
-                              ? 'ring-2 ring-noir ring-offset-2 scale-110'
-                              : 'border border-black/15 hover:scale-105'
+                              ? 'ring-2 ring-accent ring-offset-2 scale-110'
+                              : 'border border-border-subtle hover:scale-105'
                           }`}
                           style={{ backgroundColor: c.hex }}
                           title={c.name}
@@ -253,8 +260,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                           onClick={() => setSelectedSize(size)}
                           className={`px-3 py-1.5 text-xs font-semibold rounded-md border transition-smooth ${
                             selectedSize === size
-                              ? 'bg-noir text-white border-noir shadow-sm'
-                              : 'border-border-subtle text-muted hover:text-noir hover:border-noir hover:bg-surface'
+                              ? 'bg-accent text-slate-100 border-accent shadow-xs'
+                              : 'border-border-subtle text-muted hover:text-slate-100 hover:border-accent hover:bg-surface'
                           }`}
                         >
                           {size}
@@ -279,10 +286,10 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <div className="space-y-2.5 pt-4 border-t border-border-subtle">
                 <button
                   onClick={handleAddToCart}
-                  className="w-full py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-accent hover:bg-accent-hover text-slate-100 text-xs font-bold rounded-md transition-smooth shadow-md shadow-accent/25 flex items-center justify-center gap-2"
                 >
                   <ShoppingBag size={15} />
-                  إضافة لحقيبة المشتريات
+                  إضافة لسلة المشتريات
                 </button>
 
                 <button
@@ -296,7 +303,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 {addedToast && (
                   <div className="p-2.5 bg-surface border border-border-subtle rounded-md text-noir text-xs flex items-center justify-center gap-2 animate-fade-in font-medium">
                     <Check size={14} className="text-accent" />
-                    تمت الإضافة إلى الحقيبة بنجاح!
+                    تمت الإضافة إلى السلة بنجاح!
                   </div>
                 )}
               </div>

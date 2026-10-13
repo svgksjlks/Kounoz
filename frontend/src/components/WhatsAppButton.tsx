@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, Send, X, Sparkles, CheckCircle2, PhoneCall } from 'lucide-react';
 import { getWhatsAppNumber, formatWhatsAppUrl, getStoreSettings } from '../lib/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export function WhatsAppButton() {
-  const [whatsappNumber, setWhatsappNumber] = useState<string>('01000943197');
+  const { dir } = useLanguage();
+  const [whatsappNumber, setWhatsappNumber] = useState<string>('01022822123');
   const [isOpen, setIsOpen] = useState(false);
   const [customMsg, setCustomMsg] = useState('');
   const [mounted, setMounted] = useState(false);
@@ -40,7 +42,7 @@ export function WhatsAppButton() {
   };
 
   return (
-    <div className="fixed bottom-20 left-4 sm:bottom-20 sm:left-6 z-40 flex flex-col items-start" dir="rtl">
+    <div className="fixed bottom-20 left-4 sm:bottom-20 sm:left-6 lg:bottom-8 lg:left-8 z-40 flex flex-col items-start" dir={dir}>
       {/* Quick Chat Popup Modal */}
       <AnimatePresence>
         {isOpen && (
@@ -61,16 +63,16 @@ export function WhatsAppButton() {
                   <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-[#1C1610] rounded-full animate-pulse" />
                 </div>
                 <div>
-                  <h4 className="font-serif font-bold text-sm text-white flex items-center gap-1.5">
+                  <h4 className="font-serif font-bold text-sm text-slate-100 flex items-center gap-1.5">
                     <span>خدمة عملاء كنوز</span>
-                    <Sparkles size={13} className="text-[#AD8A55]" />
+                    <Sparkles size={13} className="text-rose-300" />
                   </h4>
-                  <p className="text-[11px] text-[#D8C6A3]">متصل الآن للطلب الفوري والمساعدة</p>
+                  <p className="text-[11px] text-rose-200/80">متصل الآن للطلب الفوري والمساعدة</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-[#D8C6A3] hover:text-white p-1 rounded-md transition-smooth"
+                className="text-slate-300 hover:text-white p-1 rounded-md transition-smooth"
                 aria-label="إغلاق"
               >
                 <X size={18} />
@@ -78,13 +80,13 @@ export function WhatsAppButton() {
             </div>
 
             {/* Body */}
-            <div className="p-4 space-y-3 bg-[#FAF8F5]">
-              <div className="p-3 bg-white rounded-xl border border-border-subtle shadow-xs text-xs space-y-1">
-                <div className="flex items-center gap-1.5 text-emerald-800 font-bold">
+            <div className="p-4 space-y-3 bg-card">
+              <div className="p-3 bg-surface rounded-xl border border-border-subtle shadow-xs text-xs space-y-1">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
                   <CheckCircle2 size={14} />
                   <span>الرقم المعتمد للطلب:</span>
                 </div>
-                <p className="text-[#1C1610] font-mono font-bold tracking-wider text-sm dir-ltr text-right">
+                <p className="text-slate-200 font-mono font-bold tracking-wider text-sm dir-ltr text-right">
                   {whatsappNumber}
                 </p>
               </div>
@@ -95,28 +97,28 @@ export function WhatsAppButton() {
                 <button
                   type="button"
                   onClick={() => handleDirectChat('السلام عليكم، أود المساعدة في اختيار المقاس المناسب وطريقة الطلب.')}
-                  className="w-full text-right p-2.5 bg-white hover:bg-[#EFE9DB] rounded-lg border border-border-subtle text-xs text-[#1C1610] font-medium transition-smooth flex items-center justify-between"
+                  className="w-full text-right p-2.5 bg-surface hover:bg-surface/80 rounded-lg border border-border-subtle text-xs text-slate-200 font-medium transition-smooth flex items-center justify-between"
                 >
                   <span>استفسار عن المقاسات والخامات 📏</span>
-                  <Send size={12} className="text-[#AD8A55] rotate-180" />
+                  <Send size={12} className="text-accent rotate-180" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDirectChat('السلام عليكم، أود الاستفسار عن الشحن والتوصيل لعنواني.')}
-                  className="w-full text-right p-2.5 bg-white hover:bg-[#EFE9DB] rounded-lg border border-border-subtle text-xs text-[#1C1610] font-medium transition-smooth flex items-center justify-between"
+                  className="w-full text-right p-2.5 bg-surface hover:bg-surface/80 rounded-lg border border-border-subtle text-xs text-slate-200 font-medium transition-smooth flex items-center justify-between"
                 >
                   <span>مدة الشحن والتوصيل السريع 🚚</span>
-                  <Send size={12} className="text-[#AD8A55] rotate-180" />
+                  <Send size={12} className="text-accent rotate-180" />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDirectChat('السلام عليكم، أود معرفة العروض والخصومات المتاحة حالياً.')}
-                  className="w-full text-right p-2.5 bg-white hover:bg-[#EFE9DB] rounded-lg border border-border-subtle text-xs text-[#1C1610] font-medium transition-smooth flex items-center justify-between"
+                  className="w-full text-right p-2.5 bg-surface hover:bg-surface/80 rounded-lg border border-border-subtle text-xs text-slate-200 font-medium transition-smooth flex items-center justify-between"
                 >
                   <span>الاستفسار عن العروض الخاصة ✨</span>
-                  <Send size={12} className="text-[#AD8A55] rotate-180" />
+                  <Send size={12} className="text-accent rotate-180" />
                 </button>
               </div>
 

@@ -17,10 +17,12 @@ import {
   Globe,
   ChevronLeft,
   ShieldCheck,
+  Tag,
 } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { getAdminUser, isAdminEmail } from '../lib/api';
+import { getAdminUser, isAdminEmail, getStoreSettings } from '../lib/api';
 import { useSession } from 'next-auth/react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SideNavProps {
   isOpen: boolean;
@@ -38,18 +40,29 @@ export function SideNav({
   onOpenAuth,
 }: SideNavProps) {
   const { data: session } = useSession();
+  const { language, toggleLanguage, dir, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [storeSettings, setStoreSettings] = useState(() => getStoreSettings());
 
   useEffect(() => {
     const user = getAdminUser();
     setAdminUser(user);
+    setStoreSettings(getStoreSettings());
 
     const handleAuth = () => {
       setAdminUser(getAdminUser());
     };
+    const handleSettings = () => {
+      setStoreSettings(getStoreSettings());
+    };
+
     window.addEventListener('kounoz_auth_changed', handleAuth);
-    return () => window.removeEventListener('kounoz_auth_changed', handleAuth);
+    window.addEventListener('kounoz_settings_updated', handleSettings);
+    return () => {
+      window.removeEventListener('kounoz_auth_changed', handleAuth);
+      window.removeEventListener('kounoz_settings_updated', handleSettings);
+    };
   }, []);
 
   const isCurrentAdmin = !!(
@@ -78,11 +91,12 @@ export function SideNav({
   }, [isOpen, onClose]);
 
   const menuItems = [
-    { label: 'الرئيسية', href: '/', icon: Home, category: 'جميع القطع' },
-    { label: 'تخفيضات الصيفي', href: '/#collection', icon: Percent, category: 'أثواب ملكية' },
-    { label: 'وصل حديثاً', href: '/#collection', icon: Sparkles, category: 'جميع القطع' },
-    { label: 'عبايات', href: '/#collection', icon: Layers, category: 'جلابيب كلاسيكية' },
-    { label: 'من نحن', href: '/#about', icon: Info },
+    { label: t('home'), href: '/', icon: Home, category: 'جميع القطع' },
+    { label: t('discounts'), href: '/#collection', icon: Tag, category: 'تخفيضات' },
+    { label: t('new_arrivals'), href: '/#collection', icon: Sparkles, category: 'وصل حديثاً' },
+    { label: t('winter_collection'), href: '/#collection', icon: Layers, category: 'كولكشن الشتوي' },
+    { label: t('summer_collection'), href: '/#collection', icon: Percent, category: 'كولكشن الصيفي' },
+    { label: t('about_us'), href: '/#about', icon: Info },
   ];
 
   const handleNavClick = (category?: string) => {
@@ -110,7 +124,7 @@ export function SideNav({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 z-50 overflow-hidden" dir={dir}>
           {/* Subtle Desktop & Mobile Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -143,12 +157,12 @@ export function SideNav({
               {/* Header with Esc shortcut info on desktop and clear close button */}
               <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-main">
                 <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 flex-shrink-0">
+                  <div className="relative w-10 h-10 rounded-full bg-[#FAF6EE] p-1 border border-[#D4AF37]/50 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
                     <Image
                       src="/kounoz-logo.png"
                       alt="شعار كنوز"
                       fill
-                      className="object-contain"
+                      className="object-contain p-0.5"
                     />
                   </div>
                   <div className="flex flex-col">
@@ -218,63 +232,59 @@ export function SideNav({
                 })}
               </nav>
 
-              {/* Auth Links (Customer Login + Admin Panel only for admin) */}
+              {/* Admin Access Link */}
               <div className="p-6 border-b border-border-subtle space-y-2.5">
                 <Link
-                  href="/login"
+                  href="/admin"
                   onClick={onClose}
-                  className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#1C1610] hover:bg-[#AD8A55] text-white text-xs font-bold transition-smooth shadow-sm"
+                  className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#1C1610] hover:bg-[#7A0C28] text-white text-xs font-bold transition-smooth shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
-                    <User size={16} />
-                    <span>{isCurrentAdmin ? '👑 حساب المدير والإدارة' : 'تسجيل الدخول / حسابي'}</span>
+                    <ShieldCheck size={16} className="text-[#D4AF37]" />
+                    <span>{isCurrentAdmin ? '👑 لوحة تحكم الإدارة (Admin)' : 'تسجيل دخول الإدارة (Admin Login)'}</span>
                   </div>
                   <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold">
-                    {isCurrentAdmin ? 'إدارة المتجر' : 'حساب العميل'}
+                    {isCurrentAdmin ? 'المدير' : 'دخول الأدمن'}
                   </span>
                 </Link>
-
-                {isCurrentAdmin && (
-                  <Link
-                    href="/admin"
-                    onClick={onClose}
-                    className="w-full flex items-center justify-between p-3.5 rounded-md bg-[#AD8A55] hover:bg-[#8C6B4F] text-white text-xs font-bold transition-smooth shadow-md"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <ShieldCheck size={16} />
-                      <span>لوحة تحكم الإدارة (Admin Dashboard)</span>
-                    </div>
-                    <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded font-bold">لوحة التحكم</span>
-                  </Link>
-                )}
               </div>
 
               {/* Need Help Section (تحتاج للمساعدة؟) */}
               <div className="p-6 border-b border-border-subtle space-y-3 bg-main/40">
-                <p className="text-xs font-bold text-noir tracking-wider">تحتاج للمساعدة؟</p>
+                <p className="text-xs font-bold text-noir tracking-wider">
+                  {language === 'ar' ? 'تحتاج للمساعدة؟' : 'Need Help?'}
+                </p>
                 <div className="space-y-2.5 text-xs text-muted">
                   <a
-                    href="tel:01000943197"
+                    href={`tel:${storeSettings.store_phone || storeSettings.whatsapp_number || '01022822123'}`}
                     className="flex items-center gap-3 hover:text-noir transition-smooth py-1"
                   >
                     <div className="p-1.5 rounded bg-card border border-border-subtle text-accent">
                       <Phone size={13} />
                     </div>
                     <div className="flex flex-col text-right">
-                      <span className="font-semibold text-noir">الاتصال المباشر</span>
-                      <span dir="ltr" className="text-muted text-[11px]">01000943197</span>
+                      <span className="font-semibold text-noir">
+                        {language === 'ar' ? 'الاتصال المباشر' : 'Direct Call'}
+                      </span>
+                      <span dir="ltr" className="text-muted text-[11px] font-mono">
+                        {storeSettings.store_phone || storeSettings.whatsapp_number || '01022822123'}
+                      </span>
                     </div>
                   </a>
                   <a
-                    href="mailto:omargamil37@gmail.com"
+                    href={`mailto:${storeSettings.store_email || 'Kounozthobe@gmail.com'}`}
                     className="flex items-center gap-3 hover:text-noir transition-smooth py-1"
                   >
                     <div className="p-1.5 rounded bg-card border border-border-subtle text-accent">
                       <Mail size={13} />
                     </div>
                     <div className="flex flex-col text-right">
-                      <span className="font-semibold text-noir">التواصل بالبريد</span>
-                      <span className="text-muted text-[11px]">omargamil37@gmail.com</span>
+                      <span className="font-semibold text-noir">
+                        {language === 'ar' ? 'التواصل بالبريد' : 'Email Support'}
+                      </span>
+                      <span className="text-muted text-[11px] font-mono">
+                        {storeSettings.store_email || 'Kounozthobe@gmail.com'}
+                      </span>
                     </div>
                   </a>
                 </div>

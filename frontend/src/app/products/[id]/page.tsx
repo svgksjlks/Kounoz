@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Navbar } from '../../../components/Navbar';
 import { Product, Color } from '../../../types';
-import { getProductById, formatWhatsAppUrl, getWhatsAppNumber } from '../../../lib/api';
+import { getProductById, formatWhatsAppUrl, getWhatsAppNumber, getColorShapes } from '../../../lib/api';
 import { useCart } from '../../../context/CartContext';
 import { ProductSizeGuide } from '../../../components/ProductSizeGuide';
+import { MeasurementGuideCard } from '../../../components/MeasurementGuideCard';
 import {
   ArrowRight,
   ShoppingBag,
@@ -22,8 +23,10 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLanguage } from '../../../context/LanguageContext';
 
 export default function ProductDetailPage() {
+  const { dir } = useLanguage();
   const params = useParams();
   const id = params?.id as string;
   const { addItem } = useCart();
@@ -40,6 +43,7 @@ export default function ProductDetailPage() {
     'المنظر الخلفي والياقة',
     'زاوية القَصّة والجانب',
     'تفاصيل النسيج والتطريز الدقيق',
+    'باكدجينج كنوز الفاخر (تستلمها هكذا)',
   ];
 
   useEffect(() => {
@@ -68,7 +72,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-main flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-main flex items-center justify-center" dir={dir}>
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-2 border-noir border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted text-xs">جاري تحميل تفاصيل ومواصفات القطعة...</p>
@@ -77,25 +81,14 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Dynamic shapes based on selected color
-  const colorShapes = selectedColor?.images && selectedColor.images.length > 0
-    ? selectedColor.images
-    : selectedColor?.image_url
-    ? [
-        selectedColor.image_url,
-        ...(product.images || [product.image_url, product.secondary_image_url]).filter(
-          (img): img is string => Boolean(img) && img !== selectedColor.image_url
-        ),
-      ]
-    : null;
-
-  const allShapes = colorShapes || (
-    (product.images && product.images.length > 0)
-      ? product.images
-      : [product.image_url, product.secondary_image_url].filter(Boolean) as string[]
-  );
+  // Guaranteed consistent 4 angles for the active selected color
+  const allShapes = getColorShapes(product, selectedColor);
 
   const currentMainPhoto = allShapes[activeImageIndex] || allShapes[0] || product.image_url;
+
+  const discountPercent = product.original_price
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
+    : null;
 
   const handleAddToCart = () => {
     addItem({
@@ -130,7 +123,7 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-main" dir="rtl">
+    <div className="min-h-screen bg-main" dir={dir}>
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 py-12 sm:py-16">
@@ -143,18 +136,18 @@ export default function ProductDetailPage() {
           العودة للتشكيلة الرئيسية
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          {/* Left Column: Large Product Photo Stage + 4 Shape Viewers (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            {/* Main Stage Container with 1-Click active shape */}
-            <div className="relative w-full h-[450px] md:h-[560px] rounded-lg overflow-hidden bg-surface border border-border-subtle shadow-md">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* Left Column: Large Product Photo Stage + 4 Shape Viewers (6 cols) */}
+          <div className="lg:col-span-6 space-y-4">
+            {/* Main Stage Container with 1-Click active shape - Vertical Frame (2:3) */}
+            <div className="relative w-full aspect-[2/3] max-h-[820px] rounded-lg overflow-hidden bg-surface border border-border-subtle shadow-md">
               <Image
                 src={currentMainPhoto}
                 alt={product.name}
                 fill
                 priority
                 className="object-cover transition-all duration-300"
-                sizes="(max-width: 1024px) 100vw, 60vw"
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
               <div className="absolute bottom-4 right-4 bg-[#141416]/90 backdrop-blur-md text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 shadow-2xl border border-white/20 ring-1 ring-black/40">
                 <div className="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse flex-shrink-0" />
@@ -163,22 +156,24 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* 4 Shapes One-Click Selector Grid */}
+            {/* 5 Photos One-Click Selector Grid (4 Angles + Packaging) */}
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between text-xs text-muted">
-                <span className="font-bold text-noir">أشكال وزوايا القطعة (4 أشكال بنقرة واحدة):</span>
-                <span className="text-[11px] text-accent font-semibold">اضغط لعرض أي شكل في الصورة الرئيسية</span>
+                <span className="font-bold text-noir">أشكال وتفاصيل القطعة والباكدج (5 صور بنقرة واحدة):</span>
+                <span className="text-[11px] text-accent font-semibold">اضغط لعرض أي زاوية أو الباكدج</span>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {allShapes.slice(0, 4).map((shapeUrl, idx) => (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-2.5">
+                {allShapes.slice(0, 5).map((shapeUrl, idx) => (
                   <motion.button
                     key={idx}
                     type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.96 }}
-                    onClick={() => setActiveImageIndex(idx)}
-                    className={`relative h-28 rounded-md overflow-hidden cursor-pointer border flex flex-col justify-end p-2.5 transition-all ${
+                    onClick={() => {
+                      setActiveImageIndex(idx);
+                    }}
+                    className={`relative aspect-[3/4] sm:aspect-[2/3] rounded-md overflow-hidden cursor-pointer border flex flex-col justify-end p-2 transition-all ${
                       activeImageIndex === idx
                         ? 'border-accent ring-2 ring-accent ring-offset-2 shadow-md scale-102'
                         : 'border-border-subtle hover:border-noir opacity-80 hover:opacity-100'
@@ -191,50 +186,71 @@ export default function ProductDetailPage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                    <span className="relative z-10 text-white text-xs font-bold text-right leading-tight drop-shadow-md">
-                      {['1. أمامي', '2. خلفي', '3. جانبي', '4. النسيج'][idx]}
+                    <span className="relative z-10 text-white text-[10px] sm:text-xs font-bold text-right leading-tight drop-shadow-md">
+                      {['1. أمامي', '2. خلفي', '3. جانبي', '4. النسيج', '5. الباكدج'][idx]}
                     </span>
                   </motion.button>
                 ))}
               </div>
             </div>
+
+            {/* Visual Measurement Guide Illustration Card */}
+            <div className="pt-2">
+              <MeasurementGuideCard />
+            </div>
           </div>
 
-          {/* Right Column: Garment Information & Specs (5 cols) */}
+          {/* Right Column: Garment Information & Specs (6 cols) */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-5 space-y-8 bg-card p-8 sm:p-10 rounded-lg border border-border-subtle shadow-sm text-right"
+            className="lg:col-span-6 space-y-8 bg-card p-8 sm:p-10 rounded-lg border border-border-subtle shadow-sm text-right"
           >
-            <div>
-              <div className="flex items-center justify-between text-xs text-muted mb-2.5">
-                <span className="font-semibold text-accent">
+            {/* Header: Name, Category, Badges */}
+            <div className="space-y-3 border-b border-border-subtle pb-6">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-widest text-accent bg-surface px-3 py-1 rounded border border-border-subtle">
                   {product.category}
                 </span>
-                {product.tag && (
-                  <span className="bg-surface px-2.5 py-0.5 rounded text-noir text-[11px] font-medium border border-border-subtle">
-                    {product.tag}
+                {product.is_new && (
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-100 bg-accent px-2.5 py-0.5 rounded shadow-xs">
+                    جديد
                   </span>
                 )}
               </div>
 
-              <h1 className="font-serif text-3xl font-bold text-noir leading-tight">
+              <h1 className="font-serif text-3xl sm:text-4xl font-extrabold text-noir leading-tight">
                 {product.name}
               </h1>
 
-              <div className="flex items-baseline gap-3 mt-4">
-                <span className="text-2xl font-extrabold text-noir">
-                  {product.price} ج.م
-                </span>
-                {product.original_price && (
-                  <span className="text-muted line-through text-sm font-normal">
-                    {product.original_price} ج.م
-                  </span>
-                )}
-              </div>
+              {/* Tag / Quality badge */}
+              {product.tag && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-surface border border-border-subtle text-muted text-xs">
+                  <Sparkles size={13} className="text-accent" />
+                  <span>{product.tag}</span>
+                </div>
+              )}
             </div>
 
+            {/* Price & Discount Bar */}
+            <div className="flex items-baseline gap-4 py-2">
+              <span className="text-3xl sm:text-4xl font-extrabold text-noir">
+                {product.price} ج.م
+              </span>
+              {product.original_price && (
+                <span className="text-base text-muted line-through">
+                  {product.original_price} ج.م
+                </span>
+              )}
+              {discountPercent && (
+                <span className="text-xs font-bold text-slate-100 bg-accent px-2.5 py-1 rounded">
+                  وفر {discountPercent}%
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
             <p className="text-muted text-sm leading-relaxed border-t border-border-subtle pt-6 font-normal">
               {product.description}
             </p>
@@ -253,38 +269,69 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Color Swatches with Micro-interactions */}
+            {/* 4 Luxury Color Options Selector */}
             {product.colors && product.colors.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs">
-                  <span className="font-bold text-noir">
-                    لون القماش المختار:
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-noir">ألوان الجلابية المتاحة (4 ألوان):</span>
+                    <span className="text-[11px] text-muted">(اضغط للتبديل الفوري)</span>
+                  </div>
+                  <span className="text-xs font-bold text-accent bg-surface px-2.5 py-1 rounded border border-border-subtle">
+                    {selectedColor?.name}
                   </span>
-                  <span className="text-muted font-medium">{selectedColor?.name}</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  {product.colors.map((c) => (
-                    <motion.button
-                      key={c.name}
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => {
-                        setSelectedColor(c);
-                        setActiveImageIndex(0);
-                      }}
-                      className={`w-7 h-7 rounded-full transition-smooth flex items-center justify-center ${
-                        selectedColor?.name === c.name
-                          ? 'ring-2 ring-noir ring-offset-2 scale-110 shadow-sm'
-                          : 'border border-black/15 hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                      title={c.name}
-                      aria-label={c.name}
-                    >
-                      {selectedColor?.name === c.name && (
-                        <Check size={13} className={c.hex === '#1C1C1E' || c.hex === '#111111' || c.hex === '#0B132B' ? 'text-white' : 'text-noir'} />
-                      )}
-                    </motion.button>
-                  ))}
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {product.colors.map((c, cIdx) => {
+                    const isSelected = selectedColor?.name === c.name;
+                    const colorImg = c.image_url || (product.images && product.images[cIdx]);
+                    return (
+                      <motion.button
+                        key={c.name}
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          setSelectedColor(c);
+                          setActiveImageIndex(0);
+                        }}
+                        className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-right transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-noir bg-surface shadow-sm ring-1 ring-noir'
+                            : 'border-border-subtle bg-card hover:border-noir/60'
+                        }`}
+                      >
+                        {/* Mini Image or Color Swatch */}
+                        <div className="relative w-9 h-9 rounded-md overflow-hidden flex-shrink-0 border border-black/10 bg-surface">
+                          {colorImg ? (
+                            <Image src={colorImg} alt={c.name} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full" style={{ backgroundColor: c.hex }} />
+                          )}
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <Check size={15} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          <span className={`text-xs font-bold truncate ${isSelected ? 'text-noir' : 'text-muted'}`}>
+                            {c.name}
+                          </span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span
+                              className="w-2 h-2 rounded-full border border-black/20"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            <span className="text-[10px] text-muted font-normal">
+                              {isSelected ? 'المحدد حالياً' : 'انقر للمعاينة'}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -357,7 +404,7 @@ export default function ProductDetailPage() {
                   className="flex-1 py-3.5 bg-noir hover:bg-accent text-white text-xs font-bold rounded-md transition-smooth shadow-sm flex items-center justify-center gap-2"
                 >
                   <ShoppingBag size={15} />
-                  إضافة لحقيبة المشتريات
+                  إضافة لسلة المشتريات
                 </motion.button>
               </div>
 
@@ -381,7 +428,7 @@ export default function ProductDetailPage() {
                     className="p-3 bg-surface border border-border-subtle rounded-md text-noir text-xs flex items-center gap-2 font-medium"
                   >
                     <Check size={15} className="text-accent" />
-                    تمت إضافة القطعة بنجاح إلى حقيبة مشترياتك!
+                    تمت إضافة القطعة بنجاح إلى سلة مشترياتك!
                   </motion.div>
                 )}
               </AnimatePresence>

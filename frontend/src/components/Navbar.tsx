@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingBag, Menu, Search, User } from 'lucide-react';
+import { ShoppingBag, Menu, Search, User, Globe, LogOut, ShieldCheck } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import { SideNav } from './SideNav';
 import { AnnouncementBar } from './AnnouncementBar';
 import { motion } from 'framer-motion';
+import { getAuthenticatedUser, logoutCustomer, logoutAdmin } from '../lib/api';
 
 interface NavbarProps {
   activeCategory?: string;
@@ -16,24 +19,32 @@ interface NavbarProps {
 
 export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
   const { openCart, totalItems } = useCart();
+  const { language, toggleLanguage, t } = useLanguage();
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
+    const update = () => {
+      setCurrentUser(getAuthenticatedUser());
+    };
+    update();
+    window.addEventListener('kounoz_auth_changed', update);
+    return () => window.removeEventListener('kounoz_auth_changed', update);
   }, []);
 
   const navLinks = [
-    { label: 'الرئيسية', href: '/', category: 'جميع القطع' },
-    { label: 'تخفيضات الصيفي', href: '/#collection', category: 'أثواب ملكية' },
-    { label: 'وصل حديثاً', href: '/#collection', category: 'جميع القطع' },
-    { label: 'عبايات', href: '/#collection', category: 'جلابيب كلاسيكية' },
-    { label: 'من نحن', href: '/#about' },
+    { label: t('home'), href: '/', category: 'جميع القطع' },
+    { label: t('discounts'), href: '/#collection', category: 'تخفيضات' },
+    { label: t('new_arrivals'), href: '/#collection', category: 'وصل حديثاً' },
+    { label: t('winter_collection'), href: '/#collection', category: 'كولكشن الشتوي' },
+    { label: t('summer_collection'), href: '/#collection', category: 'كولكشن الصيفي' },
   ];
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-main/95 backdrop-blur-md border-b border-border-subtle transition-smooth">
+      <header className="sticky top-0 z-40 bg-[#FAF6EE]/90 backdrop-blur-md border-b border-border-subtle transition-smooth">
         {/* Top Scrolling Announcement Ticker */}
         <AnnouncementBar />
 
@@ -51,14 +62,14 @@ export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
             </motion.button>
 
             {/* Brand Logo & Name */}
-            <Link href="/" className="group flex items-center gap-2.5 transition-smooth">
-              <div className="relative w-11 h-11 sm:w-14 sm:h-14 flex-shrink-0">
+            <Link href="/" className="group flex items-center gap-3 transition-smooth">
+              <div className="relative w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#FAF6EE] p-1.5 border border-[#D4AF37]/50 shadow-[0_2px_10px_rgba(212,175,55,0.15)] flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:scale-105 group-hover:border-[#7A0C28] group-hover:shadow-[0_4px_16px_rgba(122,12,40,0.25)] transition-all duration-300">
                 <Image
                   src="/kounoz-logo.png"
                   alt="شعار كنوز KOUNOZ"
                   fill
                   priority
-                  className="object-contain"
+                  className="object-contain p-1"
                 />
               </div>
               <div className="flex flex-col items-start">
@@ -73,7 +84,7 @@ export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
           </div>
 
           {/* Center: Main Navigation Links matching requested design */}
-          <nav className="hidden lg:flex items-center space-x-8 space-x-reverse text-sm font-semibold text-muted">
+          <nav className="hidden lg:flex items-center gap-7 xl:gap-9 text-sm font-semibold text-muted">
             {navLinks.map((item) => {
               const isActive = item.category ? activeCategory === item.category : false;
               return (
@@ -85,54 +96,96 @@ export function Navbar({ activeCategory, onSelectCategory }: NavbarProps) {
                       onSelectCategory(item.category);
                     }
                   }}
-                  className={`hover:text-noir transition-smooth relative py-2 tracking-wide text-sm font-bold ${
-                    isActive ? 'text-noir' : 'text-muted'
+                  className={`transition-smooth relative py-2 tracking-wide text-sm ${
+                    isActive ? 'text-noir font-bold' : 'text-muted hover:text-accent font-semibold'
                   }`}
                 >
                   {item.label}
                   {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-noir rounded-full animate-fade-in" />
+                    <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-accent rounded-full animate-fade-in shadow-[0_0_8px_rgba(122,12,40,0.6)]" />
                   )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Left side: Actions (Cart, User, Search, 3D Studio) */}
-          <div className="flex items-center space-x-3 sm:space-x-4 space-x-reverse">
+          {/* Left side: Actions (Language, Search, User, Cart) */}
+          <div className="flex items-center gap-2.5 sm:gap-3.5">
+            {/* Language Toggle Button */}
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={toggleLanguage}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs font-bold text-noir hover:text-accent hover:bg-surface border border-border-subtle hover:border-accent transition-smooth flex items-center gap-1.5 shadow-sm"
+              aria-label={language === 'ar' ? 'Switch to English' : 'التحويل للعربية'}
+              title={language === 'ar' ? 'English' : 'العربية'}
+            >
+              <Globe size={15} className="text-accent" />
+              <span className="font-bold text-[11px] tracking-wider uppercase">
+                {language === 'ar' ? 'EN' : 'عربي'}
+              </span>
+            </motion.button>
+
             {/* Search Button */}
             <button
               onClick={() => setIsSideNavOpen(true)}
               className="p-2 sm:p-2.5 rounded-md text-muted hover:text-noir hover:bg-surface transition-smooth"
-              aria-label="البحث"
+              aria-label={t('search')}
+              title={t('search')}
             >
               <Search size={18} />
             </button>
 
-            {/* User Profile / Login Button */}
-            <Link
-              href="/login"
-              className="p-2 sm:p-2.5 rounded-md text-muted hover:text-noir hover:bg-surface transition-smooth"
-              aria-label="تسجيل الدخول / حسابي"
-              title="تسجيل الدخول / حسابي"
-            >
-              <User size={18} />
-            </Link>
+            {/* Dedicated Admin Login Button */}
+            {currentUser?.is_admin ? (
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-[#FAF6EE] text-[#7A0C28] hover:bg-[#7A0C28] hover:text-white rounded-md border border-[#D4AF37]/50 text-xs font-bold transition-all shadow-sm"
+                  title="لوحة تحكم الإدارة"
+                >
+                  <ShieldCheck size={14} className="text-[#D4AF37]" />
+                  <span>لوحة التحكم</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logoutAdmin();
+                    logoutCustomer();
+                    signOut({ redirect: false });
+                  }}
+                  className="p-1.5 sm:p-2 rounded-md text-red-600 hover:bg-red-50 transition-smooth"
+                  aria-label="تسجيل خروج الأدمن"
+                  title="تسجيل خروج الأدمن"
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-surface hover:bg-card text-muted hover:text-noir rounded-md border border-border-subtle hover:border-[#D4AF37] text-xs font-bold transition-smooth shadow-sm"
+                title="تسجيل دخول الأدمن"
+              >
+                <ShieldCheck size={14} className="text-[#D4AF37]" />
+                <span className="hidden sm:inline">دخول الأدمن</span>
+              </Link>
+            )}
 
             {/* Cart Button */}
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={openCart}
               className="relative p-2 sm:p-2.5 rounded-md text-noir hover:bg-surface border border-border-subtle transition-smooth group"
-              aria-label="حقيبة المشتريات"
+              aria-label={t('cart')}
+              title={t('cart')}
             >
-              <ShoppingBag size={18} className="group-hover:scale-105 transition-smooth" />
+              <ShoppingBag size={18} className="group-hover:scale-105 group-hover:text-accent transition-smooth" />
               {mounted && totalItems > 0 ? (
-                <span className="absolute -top-1.5 -left-1.5 bg-noir text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-fade-in">
+                <span className="absolute -top-1.5 -left-1.5 bg-accent text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-fade-in shadow-sm shadow-accent/40">
                   {totalItems}
                 </span>
               ) : (
-                <span className="absolute -top-1.5 -left-1.5 bg-surface text-noir text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-border-subtle">
+                <span className="absolute -top-1.5 -left-1.5 bg-surface text-muted text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-border-subtle">
                   0
                 </span>
               )}

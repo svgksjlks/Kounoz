@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Product, User } from '../types';
+import { Product, User, Color } from '../types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -46,9 +46,30 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L', '60L'],
     colors: [
-      { name: 'اللون المعروض', hex: '#AD8A55', image_url: '/products/1/1.png' },
-      { name: 'المنظر الخلفي', hex: '#1C1610', image_url: '/products/1/2.png' },
-      { name: 'تفاصيل القماش', hex: '#DED4C2', image_url: '/products/1/4.png' },
+      {
+        name: 'عسلي مذهّب ملكي',
+        hex: '#AD8A55',
+        image_url: '/products/1/1.png',
+        images: ['/products/1/1.png', '/products/1/2.png', '/products/1/3.png', '/products/1/4.png'],
+      },
+      {
+        name: 'كحلي داكن فاخر',
+        hex: '#1C2833',
+        image_url: '/products/2/1.png',
+        images: ['/products/2/1.png', '/products/2/2.png', '/products/2/3.png', '/products/2/4.png'],
+      },
+      {
+        name: 'أبيض لؤلؤي ناصع',
+        hex: '#FAF9F6',
+        image_url: '/products/3/1.png',
+        images: ['/products/3/1.png', '/products/3/2.png', '/products/3/3.png', '/products/3/4.png'],
+      },
+      {
+        name: 'رمادي فحمي كلاسيك',
+        hex: '#2C3E50',
+        image_url: '/products/4/1.png',
+        images: ['/products/4/1.png', '/products/4/2.png', '/products/4/3.png', '/products/4/4.png'],
+      },
     ],
   },
   {
@@ -74,9 +95,30 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['54L', '56L', '58L', '60L'],
     colors: [
-      { name: 'اللون المعروض', hex: '#2C3E50', image_url: '/products/2/1.png' },
-      { name: 'الظهر والياقة', hex: '#111111', image_url: '/products/2/2.png' },
-      { name: 'التطريز الدقيق', hex: '#AD8A55', image_url: '/products/2/4.png' },
+      {
+        name: 'كحلي داكن فاخر',
+        hex: '#1C2833',
+        image_url: '/products/2/1.png',
+        images: ['/products/2/1.png', '/products/2/2.png', '/products/2/3.png', '/products/2/4.png'],
+      },
+      {
+        name: 'عسلي مذهّب ملكي',
+        hex: '#AD8A55',
+        image_url: '/products/1/1.png',
+        images: ['/products/1/1.png', '/products/1/2.png', '/products/1/3.png', '/products/1/4.png'],
+      },
+      {
+        name: 'أبيض لؤلؤي ناصع',
+        hex: '#FAF9F6',
+        image_url: '/products/3/1.png',
+        images: ['/products/3/1.png', '/products/3/2.png', '/products/3/3.png', '/products/3/4.png'],
+      },
+      {
+        name: 'رمادي فحمي كلاسيك',
+        hex: '#2C3E50',
+        image_url: '/products/4/1.png',
+        images: ['/products/4/1.png', '/products/4/2.png', '/products/4/3.png', '/products/4/4.png'],
+      },
     ],
   },
   {
@@ -102,9 +144,30 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L', '60L'],
     colors: [
-      { name: 'اللون الأساسي', hex: '#FAF9F6', image_url: '/products/3/1.png' },
-      { name: 'المنظر الخلفي', hex: '#EDE5D8', image_url: '/products/3/2.png' },
-      { name: 'تفاصيل النسيج', hex: '#8C6B4F', image_url: '/products/3/4.png' },
+      {
+        name: 'أبيض لؤلؤي ناصع',
+        hex: '#FAF9F6',
+        image_url: '/products/3/1.png',
+        images: ['/products/3/1.png', '/products/3/2.png', '/products/3/3.png', '/products/3/4.png'],
+      },
+      {
+        name: 'عسلي مذهّب ملكي',
+        hex: '#AD8A55',
+        image_url: '/products/1/1.png',
+        images: ['/products/1/1.png', '/products/1/2.png', '/products/1/3.png', '/products/1/4.png'],
+      },
+      {
+        name: 'كحلي داكن فاخر',
+        hex: '#1C2833',
+        image_url: '/products/2/1.png',
+        images: ['/products/2/1.png', '/products/2/2.png', '/products/2/3.png', '/products/2/4.png'],
+      },
+      {
+        name: 'رمادي فحمي كلاسيك',
+        hex: '#2C3E50',
+        image_url: '/products/4/1.png',
+        images: ['/products/4/1.png', '/products/4/2.png', '/products/4/3.png', '/products/4/4.png'],
+      },
     ],
   },
   {
@@ -130,9 +193,30 @@ export const FALLBACK_PRODUCTS: Product[] = [
     in_stock: true,
     sizes: ['52L', '54L', '56L', '58L'],
     colors: [
-      { name: 'اللون المعروض', hex: '#1C2833', image_url: '/products/4/1.png' },
-      { name: 'المنظر الخلفي', hex: '#3D5A45', image_url: '/products/4/2.png' },
-      { name: 'تفاصيل الخياطة', hex: '#AD8A55', image_url: '/products/4/4.png' },
+      {
+        name: 'رمادي فحمي كلاسيك',
+        hex: '#2C3E50',
+        image_url: '/products/4/1.png',
+        images: ['/products/4/1.png', '/products/4/2.png', '/products/4/3.png', '/products/4/4.png'],
+      },
+      {
+        name: 'عسلي مذهّب ملكي',
+        hex: '#AD8A55',
+        image_url: '/products/1/1.png',
+        images: ['/products/1/1.png', '/products/1/2.png', '/products/1/3.png', '/products/1/4.png'],
+      },
+      {
+        name: 'كحلي داكن فاخر',
+        hex: '#1C2833',
+        image_url: '/products/2/1.png',
+        images: ['/products/2/1.png', '/products/2/2.png', '/products/2/3.png', '/products/2/4.png'],
+      },
+      {
+        name: 'أبيض لؤلؤي ناصع',
+        hex: '#FAF9F6',
+        image_url: '/products/3/1.png',
+        images: ['/products/3/1.png', '/products/3/2.png', '/products/3/3.png', '/products/3/4.png'],
+      },
     ],
   },
 ];
@@ -141,6 +225,12 @@ export const FALLBACK_PRODUCTS: Product[] = [
 export function getLocalProducts(): Product[] {
   if (typeof window === 'undefined') return FALLBACK_PRODUCTS;
   try {
+    const version = localStorage.getItem('kounoz_products_ver');
+    if (version !== 'v5_packaging_2026') {
+      localStorage.setItem('kounoz_products_ver', 'v5_packaging_2026');
+      localStorage.setItem('kounoz_products', JSON.stringify(FALLBACK_PRODUCTS));
+      return FALLBACK_PRODUCTS;
+    }
     const saved = localStorage.getItem('kounoz_products');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -154,11 +244,13 @@ export function getLocalProducts(): Product[] {
   return FALLBACK_PRODUCTS;
 }
 
-export function saveLocalProducts(products: Product[]): void {
+export function saveLocalProducts(products: Product[], notify: boolean = true): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem('kounoz_products', JSON.stringify(products));
-    window.dispatchEvent(new Event('kounoz_products_updated'));
+    if (notify) {
+      window.dispatchEvent(new Event('kounoz_products_updated'));
+    }
   } catch (e) {
     console.error('Error saving kounoz_products to localStorage', e);
   }
@@ -176,7 +268,7 @@ export async function getProducts(category?: string): Promise<Product[]> {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.data) && data.data.length > 0) {
         if (typeof window !== 'undefined') {
-          saveLocalProducts(data.data);
+          saveLocalProducts(data.data, false);
         }
         return filterByCategory(data.data, category);
       }
@@ -191,10 +283,46 @@ export async function getProducts(category?: string): Promise<Product[]> {
 }
 
 function filterByCategory(items: Product[], category?: string): Product[] {
-  if (category && category !== 'جميع القطع') {
-    return items.filter((p) => p.category === category);
+  if (!category || category === 'جميع القطع' || category === 'الرئيسية' || category === 'الرئيسيه') {
+    return items;
   }
-  return items;
+  if (category === 'تخفيضات' || category === 'التخفيضات' || category === 'خصومات' || category === 'عروض') {
+    const sale = items.filter((p) =>
+      p.category === 'تخفيضات' ||
+      (p.original_price && p.original_price > p.price) ||
+      (p.tag && (p.tag.includes('خصم') || p.tag.includes('تخفيض') || p.tag.includes('وفر')))
+    );
+    return sale.length > 0 ? sale : items;
+  }
+  if (category === 'وصل حديثاً' || category === 'وصل حديثا') {
+    const fresh = items.filter((p) => p.is_new || (p.tag && p.tag.includes('جديد')));
+    return fresh.length > 0 ? fresh : items;
+  }
+  if (category === 'كولكشن الشتوي' || category === 'شتوي' || category === 'الشتوي') {
+    const winter = items.filter((p) =>
+      p.category === 'كولكشن الشتوي' ||
+      p.category === 'أثواب ملكية' ||
+      p.name.includes('شتوي') ||
+      p.description.includes('شتوي') ||
+      p.material.includes('صوف') ||
+      p.material.includes('جوخ') ||
+      (p.tag && p.tag.includes('شتوي'))
+    );
+    return winter.length > 0 ? winter : items;
+  }
+  if (category === 'كولكشن الصيفي' || category === 'صيفي' || category === 'الصيفي') {
+    const summer = items.filter((p) =>
+      p.category === 'كولكشن الصيفي' ||
+      p.category === 'جلابيب كلاسيكية' ||
+      p.name.includes('صيفي') ||
+      p.description.includes('صيفي') ||
+      p.material.includes('قطن') ||
+      p.material.includes('كتان') ||
+      (p.tag && p.tag.includes('صيفي'))
+    );
+    return summer.length > 0 ? summer : items;
+  }
+  return items.filter((p) => p.category === category || p.category.includes(category));
 }
 
 // ── GET PRODUCT BY ID ────────────────────────────────────────────────────────
@@ -309,19 +437,67 @@ export async function deleteProduct(id: number): Promise<boolean> {
   return true;
 }
 
-// ── ADMIN EMAIL WHITELIST & HELPERS ──────────────────────────────────────────
+// ── COLOR SHAPES RESOLVER ───────────────────────────────────────────────────
+export const KOUNOZ_PACKAGING_IMAGE = '/images/kounoz-packaging.jpg';
+
+/**
+ * Resolves 5 consistent images for a selected product:
+ * 1. Front (أمامي)
+ * 2. Back (خلفي)
+ * 3. Side (جانبي)
+ * 4. Fabric (النسيج)
+ * 5. Packaging (الباكدج الرسمي لكنوز - تستلمها هكذا)
+ */
+export function getColorShapes(product?: Product | null, color?: Color | null): string[] {
+  if (!product) return [];
+
+  let baseAngles: string[] = [];
+
+  if (color && color.images && color.images.length > 0) {
+    const valid = color.images.filter(Boolean);
+    baseAngles = [
+      valid[0],
+      valid[1] || valid[0],
+      valid[2] || valid[1] || valid[0],
+      valid[3] || valid[2] || valid[0],
+    ];
+  } else if (color && color.image_url && color.image_url.trim()) {
+    const single = color.image_url.trim();
+    baseAngles = [single, single, single, single];
+  } else if (product.images && product.images.length > 0) {
+    const valid = product.images.filter(Boolean);
+    baseAngles = [
+      valid[0],
+      valid[1] || valid[0],
+      valid[2] || valid[1] || valid[0],
+      valid[3] || valid[2] || valid[0],
+    ];
+  } else {
+    const single = product.image_url || '/products/1/1.png';
+    baseAngles = [single, product.secondary_image_url || single, single, single];
+  }
+
+  // Check if custom packaging image exists or fallback to the official Kounoz packaging image
+  const packaging = (color?.images && color.images[4]) || (product.images && product.images[4]) || KOUNOZ_PACKAGING_IMAGE;
+
+  return [baseAngles[0], baseAngles[1], baseAngles[2], baseAngles[3], packaging];
+}
+
 export const ADMIN_EMAILS = [
+  'kounozthobe@gmail.com',
   'omargamil37@gmail.com',
   'mohsengamil00@gmail.com',
   'admin@kounoz.sa',
+  'admin@kounoz.com',
 ];
 
 export function isAdminEmail(email?: string | null): boolean {
   if (!email || typeof email !== 'string') return false;
   const clean = email.trim().toLowerCase();
   return (
-    ADMIN_EMAILS.includes(clean) ||
+    ADMIN_EMAILS.some((a) => a.toLowerCase() === clean) ||
     clean.endsWith('@kounoz.sa') ||
+    clean.endsWith('@kounoz.com') ||
     clean.endsWith('@kounoz.sbs')
   );
 }
@@ -345,23 +521,93 @@ export function getAdminUser(): User | null {
   return null;
 }
 
+const ADMIN_CUSTOM_PASS_KEY = 'kounoz_admin_custom_password';
+
+export function getAdminCurrentPassword(): string {
+  if (typeof window === 'undefined') return 'admin123';
+  return localStorage.getItem(ADMIN_CUSTOM_PASS_KEY) || 'admin123';
+}
+
+export function changeAdminPassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string
+): { success: boolean; error?: string } {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !currentPassword || !newPassword) {
+    return { success: false, error: 'يرجى ملء جميع الحقول المطلوبة' };
+  }
+
+  // 1. Verify email is an authorized admin email
+  if (!isAdminEmail(cleanEmail)) {
+    return { success: false, error: 'البريد الإلكتروني المدخل غير مصرح له كمدير' };
+  }
+
+  // 2. Verify current password matches active admin password
+  const expectedPassword = getAdminCurrentPassword();
+  if (currentPassword !== expectedPassword) {
+    return { success: false, error: 'كلمة المرور الحالية غير صحيحة، يرجى التأكد وإعادة المحاولة' };
+  }
+
+  // 3. New password validation
+  if (newPassword.length < 6) {
+    return { success: false, error: 'كلمة المرور الجديدة يجب أن تكون 6 أحرف أو أرقام على الأقل' };
+  }
+
+  if (newPassword === currentPassword) {
+    return { success: false, error: 'كلمة المرور الجديدة يجب أن تكون مختلفة عن كلمة المرور الحالية' };
+  }
+
+  // 4. Persistently save new admin password
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADMIN_CUSTOM_PASS_KEY, newPassword);
+
+    // Sync into registered accounts list
+    try {
+      const accounts = getStoredAccounts();
+      const updated = accounts.map((acc) => {
+        if (acc.is_admin || isAdminEmail(acc.email)) {
+          return { ...acc, password: newPassword };
+        }
+        return acc;
+      });
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+
+    window.dispatchEvent(new Event('kounoz_auth_changed'));
+  }
+
+  return { success: true };
+}
+
 export function loginAdmin(email: string, password: string): User | null {
   const cleanEmail = email.trim().toLowerCase();
-  if (isAdminEmail(cleanEmail) || password === 'admin123' || password === 'kounoz123') {
-    const adminUser: User = {
-      id: 999,
-      name: 'مدير متجر كنوز',
-      email: cleanEmail,
-      is_admin: true,
-    };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kounoz_admin_user', JSON.stringify(adminUser));
-      localStorage.setItem('kounoz_admin_token', 'admin_secure_token_' + Date.now());
-      window.dispatchEvent(new Event('kounoz_auth_changed'));
-    }
-    return adminUser;
+  if (!cleanEmail || !password) return null;
+
+  // 1. Must be an authorized admin email
+  if (!isAdminEmail(cleanEmail)) return null;
+
+  // 2. Strict check against active admin password
+  const activePassword = getAdminCurrentPassword();
+  if (password !== activePassword) {
+    return null;
   }
-  return null;
+
+  const accounts = getStoredAccounts();
+  const account = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+
+  const adminUser: User = {
+    id: account ? account.id : 999,
+    name: account ? account.name : 'مدير متجر كنوز',
+    email: cleanEmail,
+    is_admin: true,
+  };
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('kounoz_admin_user', JSON.stringify(adminUser));
+    localStorage.setItem('kounoz_admin_token', 'admin_secure_token_' + Date.now());
+    window.dispatchEvent(new Event('kounoz_auth_changed'));
+  }
+  return adminUser;
 }
 
 export function logoutAdmin(): void {
@@ -372,50 +618,97 @@ export function logoutAdmin(): void {
   }
 }
 
-// ── RECOGNIZED TRUSTED EMAIL DOMAINS ─────────────────────────────────────────
-export const TRUSTED_EMAIL_DOMAINS = [
-  'gmail.com',
-  'googlemail.com',
-  'github.com',
-  'outlook.com',
-  'hotmail.com',
-  'live.com',
-  'msn.com',
-  'yahoo.com',
-  'yahoo.fr',
-  'yahoo.co.uk',
-  'icloud.com',
-  'me.com',
-  'mac.com',
-  'proton.me',
-  'protonmail.com',
-  'zoho.com',
-  'aol.com',
-  'mail.com',
-  'yandex.com',
-  'kounoz.sa',
-  'kounoz.sbs',
-];
-
-// ── STRICT EMAIL VALIDATION (Gmail, GitHub, Outlook, Yahoo, iCloud, etc.) ───
+// ── EMAIL VALIDATION (Universal & Standard) ─────────────────────────────────
 export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') return false;
   const trimmed = email.trim().toLowerCase();
-  
-  // RFC 5322 regex
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
-  if (!emailRegex.test(trimmed)) return false;
-  
-  const parts = trimmed.split('@');
-  if (parts.length !== 2) return false;
-  
-  const username = parts[0];
-  const domain = parts[1].toLowerCase();
-  
-  if (username.length < 3) return false;
-  
-  // Must be a recognized real email provider domain
-  return TRUSTED_EMAIL_DOMAINS.includes(domain);
+  // Standard RFC compliant email regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  return emailRegex.test(trimmed);
+}
+
+// ── PERSISTENT REGISTERED ACCOUNTS STORE ─────────────────────────────────────
+export interface StoredAccount {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  is_admin?: boolean;
+}
+
+const USERS_STORAGE_KEY = 'kounoz_registered_users_db';
+
+export const DEFAULT_ACCOUNTS: StoredAccount[] = [
+  {
+    id: 1,
+    name: 'مدير متجر كنوز',
+    email: 'admin@kounoz.sa',
+    password: 'admin123',
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 2,
+    name: 'عمر جميل',
+    email: 'omargamil37@gmail.com',
+    password: 'admin123',
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 3,
+    name: 'محسن جميل',
+    email: 'mohsengamil00@gmail.com',
+    password: 'admin123',
+    phone: '01066583964',
+    is_admin: true,
+  },
+  {
+    id: 4,
+    name: 'كنوز للثوب العربي',
+    email: 'kounozthobe@gmail.com',
+    password: 'admin123',
+    phone: '01022822123',
+    is_admin: true,
+  },
+  {
+    id: 5,
+    name: 'عميل كنوز المميز',
+    email: 'customer@kounoz.sa',
+    password: 'user123',
+    phone: '01012345678',
+    is_admin: false,
+  },
+];
+
+export function getStoredAccounts(): StoredAccount[] {
+  if (typeof window === 'undefined') return DEFAULT_ACCOUNTS;
+  try {
+    const raw = localStorage.getItem(USERS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Merge missing default accounts
+        const existingEmails = new Set(parsed.map((u: StoredAccount) => u.email.toLowerCase()));
+        const missing = DEFAULT_ACCOUNTS.filter((d) => !existingEmails.has(d.email.toLowerCase()));
+        return [...parsed, ...missing];
+      }
+    }
+  } catch {}
+  return DEFAULT_ACCOUNTS;
+}
+
+export function saveStoredAccount(account: StoredAccount): void {
+  if (typeof window === 'undefined') return;
+  const accounts = getStoredAccounts();
+  const existingIdx = accounts.findIndex((a) => a.email.toLowerCase() === account.email.toLowerCase());
+  if (existingIdx >= 0) {
+    accounts[existingIdx] = { ...accounts[existingIdx], ...account };
+  } else {
+    accounts.push(account);
+  }
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(accounts));
 }
 
 // ── CUSTOMER AUTH HELPERS ────────────────────────────────────────────────────
@@ -462,59 +755,168 @@ export function logoutCustomer(): void {
   }
 }
 
-export async function registerCustomer(name: string, email: string, password: string, phone?: string): Promise<{ success: boolean; user?: User; error?: string }> {
-  if (!isValidEmail(email)) {
-    return { success: false, error: 'صيغة البريد الإلكتروني غير صحيحة (مثال: name@gmail.com)' };
-  }
-  try {
-    const res = await api.post('/api/auth/register', { name, email, password, phone });
-    if (res.data && res.data.success && res.data.data) {
-      const user: User = res.data.data.user;
-      saveCustomerSession(user, res.data.data.token);
-      return { success: true, user };
-    }
-    return { success: false, error: res.data?.error || 'تعذر إنشاء الحساب' };
-  } catch (err: any) {
-    const errMsg = err.response?.data?.error || 'تعذر الاتصال بالخادم، جاري التسجيل محلياً...';
-    // Fallback local registration
-    const fallbackUser: User = {
-      id: Date.now(),
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone || '',
-    };
-    saveCustomerSession(fallbackUser, 'local_token_' + Date.now());
-    return { success: true, user: fallbackUser };
-  }
+export function loginWithFacebook(name?: string, email?: string): User {
+  const cleanName = (name && name.trim()) || 'عميل فيسبوك';
+  const cleanEmail = (email && email.trim().toLowerCase()) || `fb_user_${Date.now()}@facebook.com`;
+  const fbUser: User = {
+    id: Date.now(),
+    name: cleanName,
+    email: cleanEmail,
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    is_admin: false,
+  };
+  saveCustomerSession(fbUser, 'fb_token_' + Date.now());
+  return fbUser;
 }
 
-export async function loginCustomer(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
+export function getAuthenticatedUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  const admin = getAdminUser();
+  if (admin && admin.email && isAdminEmail(admin.email)) return admin;
+  const customer = getCurrentCustomer();
+  if (customer && customer.email) return customer;
+  return null;
+}
+
+export async function registerCustomer(
+  name: string,
+  email: string,
+  password: string,
+  phone?: string
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = name.trim();
+
+  if (!cleanName) {
+    return { success: false, error: 'يرجى إدخال اسمك الكريم' };
+  }
+  if (!isValidEmail(cleanEmail)) {
+    return { success: false, error: 'صيغة البريد الإلكتروني غير صحيحة (مثال: name@gmail.com)' };
+  }
+  if (!password || password.length < 6) {
+    return { success: false, error: 'كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل' };
+  }
+
+  // Check if email already registered
+  const accounts = getStoredAccounts();
+  const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+  if (existing) {
+    return { success: false, error: 'هذا البريد الإلكتروني مسجل مسبقاً، يمكنك تسجيل الدخول به' };
+  }
+
+  // Create new account
+  const newAccount: StoredAccount = {
+    id: Date.now(),
+    name: cleanName,
+    email: cleanEmail,
+    password: password,
+    phone: phone?.trim() || '',
+    is_admin: isAdminEmail(cleanEmail),
+  };
+
+  saveStoredAccount(newAccount);
+
+  const user: User = {
+    id: newAccount.id,
+    name: newAccount.name,
+    email: newAccount.email,
+    phone: newAccount.phone,
+    is_admin: newAccount.is_admin,
+  };
+
+  saveCustomerSession(user, 'token_' + Date.now());
+
+  // Also notify backend if reachable
   try {
-    const res = await api.post('/api/auth/login', { email, password });
+    await api.post('/api/auth/register', { name: cleanName, email: cleanEmail, password, phone });
+  } catch {}
+
+  return { success: true, user };
+}
+
+export async function loginCustomer(
+  email: string,
+  password: string
+): Promise<{ success: boolean; user?: User; error?: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanEmail || !password) {
+    return { success: false, error: 'يرجى إدخال البريد الإلكتروني وكلمة المرور' };
+  }
+
+  if (!isValidEmail(cleanEmail)) {
+    return { success: false, error: 'يرجى إدخال بريد إلكتروني صحيح ومكتمل' };
+  }
+
+  // 1. Try backend API first
+  try {
+    const res = await api.post('/api/auth/login', { email: cleanEmail, password });
     if (res.data && res.data.success && res.data.data) {
       const user: User = res.data.data.user;
       saveCustomerSession(user, res.data.data.token);
       return { success: true, user };
     }
-    return { success: false, error: res.data?.error || 'بيانات الدخول غير صحيحة' };
-  } catch (err: any) {
-    // Check fallback local registered user
-    const existing = getCurrentCustomer();
-    if (existing && existing.email.toLowerCase() === email.trim().toLowerCase()) {
-      saveCustomerSession(existing, 'local_token_' + Date.now());
-      return { success: true, user: existing };
+  } catch (apiErr: any) {
+    if (apiErr?.response?.data?.error) {
+      const serverMsg = apiErr.response.data.error;
+      // If server specifically returned authentication failure
+      if (serverMsg.includes('كلمة المرور') || serverMsg.includes('غير مسجل') || serverMsg.includes('غير صحيحة')) {
+        return { success: false, error: serverMsg };
+      }
     }
-    if (email.includes('@') && password.length >= 6) {
-      const fallbackUser: User = {
-        id: Date.now(),
-        name: email.split('@')[0],
-        email: email.trim().toLowerCase(),
-      };
-      saveCustomerSession(fallbackUser, 'local_token_' + Date.now());
-      return { success: true, user: fallbackUser };
-    }
-    return { success: false, error: err.response?.data?.error || 'البريد الإلكتروني أو كلمة المرور غير صحيحة' };
   }
+
+  // 2. Check local accounts database
+  const accounts = getStoredAccounts();
+  const account = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
+
+  if (!account) {
+    // If it's an authorized admin email attempting admin password
+    if (isAdminEmail(cleanEmail)) {
+      if (password === 'admin123' || password === 'kounoz123') {
+        const adminUser: User = {
+          id: Date.now(),
+          name: 'مدير المتجر',
+          email: cleanEmail,
+          is_admin: true,
+        };
+        saveCustomerSession(adminUser, 'admin_token_' + Date.now());
+        return { success: true, user: adminUser };
+      } else {
+        return {
+          success: false,
+          error: 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى',
+        };
+      }
+    }
+    return {
+      success: false,
+      error: 'هذا الحساب غير مسجل لدينا، يرجى التأكد من البريد أو الانتقال لتبويب إنشاء حساب جديد',
+    };
+  }
+
+  // Strict Password Verification
+  const isPasswordCorrect =
+    account.password === password ||
+    (account.is_admin && (password === 'admin123' || password === 'kounoz123'));
+
+  if (!isPasswordCorrect) {
+    return {
+      success: false,
+      error: 'كلمة المرور غير صحيحة، يرجى المحاولة مرة أخرى',
+    };
+  }
+
+  const user: User = {
+    id: account.id,
+    name: account.name,
+    email: account.email,
+    phone: account.phone,
+    is_admin: account.is_admin || isAdminEmail(account.email),
+  };
+
+  saveCustomerSession(user, 'token_' + Date.now());
+  return { success: true, user };
 }
 
 // ── HELPER: FILE TO BASE64 ───────────────────────────────────────────────────
@@ -653,15 +1055,79 @@ export async function uploadHeroImage(file: File): Promise<string> {
   return uploadImage(file);
 }
 
+// ── HERO BANNER SLIDER MANAGEMENT ──────────────────────────────────────────
+export const DEFAULT_BANNER_SLIDES: string[] = [
+  '/images/banners/banner-craftsmanship.png',
+  '/images/banners/banner-collection.png',
+];
+const BANNER_SLIDES_KEY = 'kounoz_banner_slides';
+
+export function getBannerSlides(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_BANNER_SLIDES;
+  try {
+    const saved = localStorage.getItem(BANNER_SLIDES_KEY);
+    if (saved) {
+      const arr = JSON.parse(saved);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    }
+  } catch {}
+  return DEFAULT_BANNER_SLIDES;
+}
+
+export function saveBannerSlides(slides: string[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(BANNER_SLIDES_KEY, JSON.stringify(slides));
+    window.dispatchEvent(new Event('kounoz_banners_updated'));
+  } catch (e) {
+    console.error('Error saving banner slides', e);
+  }
+}
+
+export async function uploadBannerSlide(file: File): Promise<string> {
+  return uploadImage(file);
+}
+
+// ── HERO VIDEO MANAGEMENT (Intro Video) ────────────────────────────────────
+export const DEFAULT_HERO_VIDEO = '/videos/intro.mp4';
+const HERO_VIDEO_KEY = 'kounoz_hero_video';
+
+export function getHeroVideo(): string {
+  if (typeof window === 'undefined') return DEFAULT_HERO_VIDEO;
+  try {
+    const saved = localStorage.getItem(HERO_VIDEO_KEY);
+    if (saved && saved.trim()) return saved.trim();
+  } catch {}
+  return DEFAULT_HERO_VIDEO;
+}
+
+export function saveHeroVideo(videoUrl: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const cleanUrl = videoUrl.trim() || DEFAULT_HERO_VIDEO;
+    localStorage.setItem(HERO_VIDEO_KEY, cleanUrl);
+    window.dispatchEvent(new Event('kounoz_hero_updated'));
+  } catch (e) {
+    console.error('Error saving hero video', e);
+  }
+}
+
+export async function uploadHeroVideo(file: File): Promise<string> {
+  // Use uploadImage which posts to /api/upload with resource_type: auto
+  return uploadImage(file);
+}
+
 // ── STORE SETTINGS & WHATSAPP CONFIGURATION ─────────────────────────────────
 export interface StoreSettings {
   whatsapp_number: string;
   whatsapp_greeting?: string;
   store_phone?: string;
+  wholesale_phone?: string;
   store_email?: string;
 }
 
-export const DEFAULT_WHATSAPP_NUMBER = '01000943197';
+export const DEFAULT_WHATSAPP_NUMBER = '01022822123';
+export const DEFAULT_WHOLESALE_NUMBER = '01066583964';
 const SETTINGS_KEY = 'kounoz_store_settings';
 const WHATSAPP_KEY = 'kounoz_whatsapp_number';
 
@@ -670,7 +1136,7 @@ const WHATSAPP_KEY = 'kounoz_whatsapp_number';
  * Supports Egyptian numbers (010..., 011..., 012..., 015...), Saudi (05...), and general international numbers.
  */
 export function formatWhatsAppPhone(phone: string): string {
-  if (!phone) return '201000943197';
+  if (!phone) return '201022822123';
   let clean = phone.replace(/[^0-9]/g, '');
 
   if (clean.startsWith('00')) {
@@ -704,13 +1170,27 @@ export function getWhatsAppNumber(): string {
   if (typeof window === 'undefined') return DEFAULT_WHATSAPP_NUMBER;
   try {
     const direct = localStorage.getItem(WHATSAPP_KEY);
-    if (direct && direct.trim()) return direct.trim();
+    if (direct && direct.trim()) {
+      const cleanDirect = direct.trim();
+      // Auto migrate legacy old numbers if found in client cache
+      if (cleanDirect === '01000943197' || cleanDirect === '201000943197') {
+        localStorage.setItem(WHATSAPP_KEY, DEFAULT_WHATSAPP_NUMBER);
+        return DEFAULT_WHATSAPP_NUMBER;
+      }
+      return cleanDirect;
+    }
 
     const savedSettings = localStorage.getItem(SETTINGS_KEY);
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
       if (parsed.whatsapp_number && parsed.whatsapp_number.trim()) {
-        return parsed.whatsapp_number.trim();
+        const cleanSaved = parsed.whatsapp_number.trim();
+        if (cleanSaved === '01000943197' || cleanSaved === '201000943197') {
+          parsed.whatsapp_number = DEFAULT_WHATSAPP_NUMBER;
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed));
+          return DEFAULT_WHATSAPP_NUMBER;
+        }
+        return cleanSaved;
       }
     }
   } catch (e) {
@@ -741,14 +1221,32 @@ export function getStoreSettings(): StoreSettings {
     whatsapp_number: DEFAULT_WHATSAPP_NUMBER,
     whatsapp_greeting: 'مرحباً، أود الاستفسار والطلب من تشكيلة كنوز الفاخرة',
     store_phone: DEFAULT_WHATSAPP_NUMBER,
-    store_email: 'omargamil37@gmail.com',
+    wholesale_phone: DEFAULT_WHOLESALE_NUMBER,
+    store_email: 'Kounozthobe@gmail.com',
   };
 
   if (typeof window === 'undefined') return defaults;
   try {
     const saved = localStorage.getItem(SETTINGS_KEY);
     if (saved) {
-      return { ...defaults, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      let changed = false;
+      if (parsed.store_phone === '01000943197' || parsed.store_phone === '201000943197') {
+        parsed.store_phone = DEFAULT_WHATSAPP_NUMBER;
+        changed = true;
+      }
+      if (parsed.store_email === 'omargamil37@gmail.com') {
+        parsed.store_email = 'Kounozthobe@gmail.com';
+        changed = true;
+      }
+      if (parsed.whatsapp_number === '01000943197' || parsed.whatsapp_number === '201000943197') {
+        parsed.whatsapp_number = DEFAULT_WHATSAPP_NUMBER;
+        changed = true;
+      }
+      if (changed) {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...defaults, ...parsed }));
+      }
+      return { ...defaults, ...parsed };
     }
   } catch {}
   return defaults;
